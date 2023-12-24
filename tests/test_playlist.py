@@ -1,6 +1,6 @@
 import os
 
-import mock
+from unittest import mock
 
 from tuatara.playlist import parse_file, parse_directory
 

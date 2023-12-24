@@ -19,7 +19,6 @@ m3u8 = "^4.0.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
 pex = "^2.1.154"
-mock = "^5.1.0"
 
 [tool.poetry.scripts]
 tuatara = 'tuatara.main:main'
