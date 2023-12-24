@@ -1,14 +1,17 @@
+import os
 import sys
+import time
 
 from tuatara.cover_art_fetcher import AppleArtFetcher, MusicBrainzArtFetcher
 from tuatara.playlist_entry import PlaylistEntry
+from tuatara.sanitize import sanitize_artist, sanitize_album
 from tuatara.settings import settings
 
 settings.set_debug(True)
 
 
-def entry(artist, album, tracks=None):
-    p = PlaylistEntry("foo.flac")
+def entry(artist, album, tracks=None, path=None):
+    p = PlaylistEntry(path or "foo.flac")
     p.artist = artist
     p.album = album
     p.track_total = tracks
@@ -43,7 +46,7 @@ def test_apple_escaped_artist(capsys):
     f = AppleArtFetcher()
     settings._debugobj = sys.stderr
 
-    escaped_artist = entry("Rodrigo y Gabriela & C.U.B.A", "Area 52", 9)
+    escaped_artist = entry("Rodrigo y Gabriela & C.U.B.A", "Area 52", tracks=9)
     f.fetch(escaped_artist)
     cap = capsys.readouterr()
     assert "67ce177e-2cbe-967f-b426-b8b1211ca9f0/mzm.tjfoszpj.jpg" in cap.err
@@ -63,7 +66,7 @@ def test_apple_artist_match_with_tracks(capsys):
     f = AppleArtFetcher()
     settings._debugobj = sys.stderr
 
-    artist_with_tracks = entry("Tori Amos", "Under the Pink", 12)
+    artist_with_tracks = entry("Tori Amos", "Under the Pink", tracks=12)
     f.fetch(artist_with_tracks)
     cap = capsys.readouterr()
     assert "2ad99479-ebca-7699-81bd-0270270a1829/603497892921.jpg" in cap.err
@@ -73,7 +76,7 @@ def test_apple_closest_match(capsys):
     f = AppleArtFetcher()
     settings._debugobj = sys.stderr
 
-    fuzzy_track_match_fetch = entry("Florence + the Machine", "Ceremonials", 16)
+    fuzzy_track_match_fetch = entry("Florence + the Machine", "Ceremonials", tracks=16)
     f.fetch(fuzzy_track_match_fetch)
     cap = capsys.readouterr()
     assert "43d59e0c-6a9e-7f1a-e41d-badced2f40b4/11UMGIM28690.rgb.jpg" in cap.err
@@ -103,7 +106,7 @@ def test_musicbrainz_escaped_artist(capsys):
     f = MusicBrainzArtFetcher()
     settings._debugobj = sys.stderr
 
-    escaped_artist = entry("Rodrigo y Gabriela & C.U.B.A", "Area 52", 9)
+    escaped_artist = entry("Rodrigo y Gabriela & C.U.B.A", "Area 52", tracks=9)
     f.fetch(escaped_artist)
     cap = capsys.readouterr()
     assert "mbid-9a5f7dd2-0044-4506-b835-83028cc45a90-15578294208.jpg" in cap.err
@@ -123,7 +126,111 @@ def test_musicbrainz_artist_with_tracks(capsys):
     f = MusicBrainzArtFetcher()
     settings._debugobj = sys.stderr
 
-    artist_with_tracks = entry("Florence + the Machine", "Ceremonials", 16)
+    artist_with_tracks = entry("Florence + the Machine", "Ceremonials", tracks=16)
     f.fetch(artist_with_tracks)
     cap = capsys.readouterr()
     assert "mbid-addc312e-3c20-400e-bbd4-69946bb82a2b-7697873196.jpg" in cap.err
+
+
+def test_async_apple(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    settings._settings["art"]["fetchers"] = ["apple"]
+    settings.set_debug(False)
+
+    playlist_entry = entry(
+        "Rodrigo y Gabriela & C.U.B.A",
+        "Area 52",
+        tracks=9,
+        path="https://example.com/foo.flac",
+    )
+
+    playlist_entry.find_cover_art()
+    timeout = 15
+    cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
+    while timeout > 0:
+        art = playlist_entry.cover_art
+        if art:
+            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
+            break
+        if playlist_entry.fetch_status == "failed":
+            break
+        time.sleep(1)
+        timeout -= 1
+    assert art is not None
+
+
+def test_async_apple_not_found(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    settings._settings["art"]["fetchers"] = ["apple"]
+    settings.set_debug(False)
+
+    playlist_entry = entry(
+        "🐕➕🌈",
+        "",
+    )
+
+    playlist_entry.find_cover_art()
+    timeout = 15
+    cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
+    while timeout > 0:
+        art = playlist_entry.cover_art
+        if art:
+            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
+            break
+        if playlist_entry.fetch_status == "failed":
+            break
+        time.sleep(1)
+        timeout -= 1
+    assert art is None
+
+
+def test_async_musicbrainz(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    settings._settings["art"]["fetchers"] = ["musicbrainz"]
+    settings.set_debug(False)
+
+    playlist_entry = entry(
+        "Rodrigo y Gabriela & C.U.B.A",
+        "Area 52",
+        tracks=9,
+        path="https://example.com/foo.flac",
+    )
+
+    playlist_entry.find_cover_art()
+    timeout = 15
+    cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
+    while timeout > 0:
+        art = playlist_entry.cover_art
+        if art:
+            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
+            break
+        if playlist_entry.fetch_status == "failed":
+            break
+        time.sleep(1)
+        timeout -= 1
+    assert art is not None
+
+
+def test_async_musicbrainz_not_found(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    settings._settings["art"]["fetchers"] = ["musicbrainz"]
+    settings.set_debug(False)
+
+    playlist_entry = entry(
+        "🐕➕🌈",
+        "",
+    )
+
+    playlist_entry.find_cover_art()
+    timeout = 15
+    cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
+    while timeout > 0:
+        art = playlist_entry.cover_art
+        if art:
+            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
+            break
+        if playlist_entry.fetch_status == "failed":
+            break
+        time.sleep(1)
+        timeout -= 1
+    assert art is None
