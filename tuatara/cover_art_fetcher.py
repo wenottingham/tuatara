@@ -1,0 +1,197 @@
+# -*- coding: utf-8 -*-
+#
+# SPDX-FileCopyrightText: Copyright © 2023 Bill Nottingham <notting@splat.cc>
+#
+# SPDX-License-Identifier: GPL-3.0+
+#
+
+import json
+import os
+import re
+
+from urllib.parse import quote
+
+import urllib3
+
+from tuatara.cover_art import FileCoverArt
+from tuatara.sanitize import sanitize_artist, sanitize_album
+from tuatara.settings import debug
+
+
+class ArtFetcher:
+    def __init__(self):
+        pass
+
+    def fetch(self, track):
+        pass
+
+    def download(self, url, dest):
+        directory = os.path.dirname(dest)
+        os.makedirs(directory, mode=0o755, exist_ok=True)
+        resp = self.http.request("GET", url)
+        if resp.status != 200:
+            debug(f"Download of {url} failed with {resp.status}")
+            return None
+        with open(dest, "wb") as f:
+            f.write(resp.data)
+        return FileCoverArt(dest)
+
+
+class AppleArtFetcher(ArtFetcher):
+    def __init__(self):
+        super().__init__()
+        self.http = urllib3.PoolManager()
+        self.headers = {
+            "Accept": "application/json",
+            # We're totally a web browser!
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0",
+        }
+
+    def fetch(self, track):
+        def download_url(result):
+            return re.sub("100x100bb", "2000x2000bb", result["artworkUrl100"])
+
+        s_artist = sanitize_artist(track.artist)
+        s_album = sanitize_album(track.album)
+        tracks = track.track_total
+
+        debug(f"Finding art for {track} via Apple Music…")
+        querystr = quote(f"{s_artist} {s_album}")
+        path = (
+            f"https://itunes.apple.com/search?media=music&entity=album&term={querystr}"
+        )
+
+        resp = self.http.request("GET", path, headers=self.headers)
+        if resp.status != 200:
+            debug("Initial search failed with {resp.status}")
+            return None
+        jsondata = resp.json()
+        if jsondata["resultCount"] < 1:
+            debug("No results found")
+            return None
+        url = None
+        fallback_url = None
+        fuzzy_url = None
+        results = jsondata["results"]
+        debug("Search results returned:")
+        debug(json.dumps(jsondata, indent=4))
+
+        if tracks:
+            results = reversed(
+                sorted(results, key=lambda x: abs(x.get("trackCount") - tracks))
+            )
+
+        for result in results:
+            r_artist = sanitize_artist(result["artistName"])
+            r_album = sanitize_album(result["collectionName"])
+            r_tracks = result["trackCount"]
+
+            if s_artist not in r_artist:
+                continue
+            if s_album not in r_album:
+                continue
+
+            if tracks:
+                if s_artist == r_artist and s_album == r_album:
+                    if tracks == r_tracks:  # exact match
+                        url = download_url(result)
+                        break
+                    else:
+                        fallback_url = download_url(result)
+                else:
+                    fuzzy_url = download_url(result)
+            else:
+                if s_artist == r_artist and s_album == r_album:  # exact match
+                    url = download_url(result)
+                    break
+                else:
+                    fuzzy_url = download_url(result)
+
+        url = url or fallback_url or fuzzy_url
+        if not url:
+            debug("No suitable album found")
+            return None
+
+        debug(f"Using art from {url}")
+        return url
+
+
+class MusicBrainzArtFetcher(ArtFetcher):
+    def __init__(self):
+        super().__init__()
+        self.http = urllib3.PoolManager()
+        self.headers = {
+            "Accept": "application/json",
+            # These folks care, we'll be truthful.
+            "User-Agent": "Tuatara/0.0.0dev (notting@splat.cc)",
+        }
+
+    def fetch(self, track):
+        s_artist = sanitize_artist(track.artist)
+        s_album = sanitize_album(track.album)
+        tracks = track.track_total
+
+        debug(f"Finding art for {track} via MusicBrainz…")
+        path = f"https://musicbrainz.org/ws/2/artist?limit=5&query={s_artist}"
+        resp = self.http.request("GET", path, headers=self.headers)
+        if resp.status != 200:
+            debug(f"Artist search failed with {resp.status}")
+            return None
+        jsondata = resp.json()
+        if jsondata["count"] == 0:
+            debug("No artists found")
+            return None
+
+        debug("Artist search returned:")
+        debug(json.dumps(jsondata, indent=4))
+
+        # Go with the first artist
+        artist_id = jsondata["artists"][0]["id"]
+
+        path = f'https://musicbrainz.org/ws/2/release?query="{s_album}" AND arid:{artist_id}'
+        resp = self.http.request("GET", path, headers=self.headers)
+        if resp.status != 200:
+            debug(f"Album search failed with {resp.status}")
+            return None
+        jsondata = resp.json()
+
+        if jsondata["count"] == 0:
+            debug("No albums found")
+            return None
+
+        debug("Album search returned:")
+        debug(json.dumps(jsondata, indent=4))
+
+        # Filter to the good matches
+        results = list(filter(lambda x: x["score"] > 90, jsondata["releases"]))
+
+        # Filter by number of tracks
+        if tracks:
+            debug(f"Filtering by {tracks} tracks")
+            filtered_results = list(
+                filter(lambda x: x["track-count"] == tracks, results)
+            )
+        else:
+            filtered_results = results
+
+        ids = list(map(lambda x: x["id"], filtered_results))
+        debug(f"Filtered album search yielded {ids}")
+
+        url = None
+        for mbid in ids:
+            path = f"https://coverartarchive.org/release/{mbid}/front"
+
+            resp = self.http.request("HEAD", path, headers=self.headers, redirect=False)
+            if resp.status == 307:
+                url = resp.get_redirect_location()
+                break
+
+        if not url:
+            debug("No art found for album IDs")
+            return None
+
+        debug(f"Using art from {url}")
+        return url
+
+
+fetchers = {"apple": AppleArtFetcher(), "musicbrainz": MusicBrainzArtFetcher()}
