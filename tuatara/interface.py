@@ -136,8 +136,7 @@ class Interface:
 
         display_str(status_str, 2)
 
-        if not track.cover_art and not track.failed_fetch:
-            # FIXME: make this async?
+        if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
         if not self.current_art and track.cover_art:
             self.display_cover_art(track.cover_art)

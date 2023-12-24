@@ -7,6 +7,8 @@
 
 import os
 
+from threading import Thread
+
 from urllib3.util import parse_url
 
 from tuatara.cover_art import FileCoverArt
@@ -23,7 +25,7 @@ class PlaylistEntry:
         self.artist = None
         self.track = None
         self.track_total = None
-        self.failed_fetch = False
+        self.fetch_status = "not_started"
         if url:
             self.set_url(url)
         else:
@@ -47,12 +49,25 @@ class PlaylistEntry:
         else:
             self.url = url
 
-    def set_failed(self):
-        self.failed_fetch = True
-
     def find_cover_art(self):
+        def fetch(fetchers, cached_art_path):
+            for name, fetcher in fetchers:
+                art_url = fetcher.fetch(self)
+                if not art_url:
+                    continue
+
+                art = fetcher.download(art_url, cached_art_path)
+                if not art:
+                    continue
+                self.cover_art = art
+                self.fetch_status = "success"
+                debug(f"Using downloaded {name} art for {self}")
+                return
+            self.fetch_status = "failed"
+
         if self.cover_art:
             return
+
         parsed_url = parse_url(self.url)
         # Check directory
         if parsed_url.scheme == "file":
@@ -82,22 +97,19 @@ class PlaylistEntry:
             return
 
         # Try to download
+        configured_fetchers = []
         for name in settings.get_art().get("fetchers"):
             fetcher = fetchers.get(name)
             if not fetcher:
                 debug(f"No fetcher named {name}")
                 continue
+            configured_fetchers.append((name, fetcher))
 
-            art_url = fetcher.fetch(self)
-            if not art_url:
-                continue
+        if configured_fetchers:
+            self.fetch_status = "fetching"
 
-            art = fetcher.download(art_url, cached_art_path)
-            if not art:
-                continue
-            self.cover_art = art
-            debug(f"Using downloaded {name} art for {self}")
+            Thread(target=fetch, args=[configured_fetchers, cached_art_path]).start()
             return
 
-        self.set_failed()
+        self.fetch_status = "failed"
         debug(f"No art found for {self}")
