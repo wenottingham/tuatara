@@ -19,6 +19,10 @@ an entire music library.
 tuatara is not intended for interactive browsing of your library;
 tell it what to play, and it plays it.
 
+# Screenshot
+
+![Screenshot](https://github.com/wenottingham/tuatara/raw/main/assets/screenshot.png)
+
 # Usage
 
 ```
