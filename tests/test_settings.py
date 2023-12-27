@@ -50,6 +50,7 @@ def test_validation(capsys):
         "charset": 32,
         "brightness_adj": 10,
         "contrast_adj": True,
+        "visualization": 3.14159,
     }
     error_msgs = (
         "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n",
@@ -58,6 +59,7 @@ def test_validation(capsys):
         "Error: 'charset' must be a string\n",
         "Error: 'brightness_adj' must be between 0 and 2\n",
         "Error: 'contrast_adj' must be between 0 and 2\n",
+        "Error: 'visualization' must be a string\n",
     )
 
     old_settings = defaults._settings
@@ -78,6 +80,7 @@ def test_override():
         "charset": "blocks",
         "brightness_adj": 1.0,
         "contrast_adj": 1.99,
+        "visualization": "goom",
     }
 
     defaults.merge_art(good_data)

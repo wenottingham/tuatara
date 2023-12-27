@@ -15,6 +15,7 @@ an entire music library.
 - Shuffle mode
 - Basic playlist support via .m3u files
 - Integrated cover art display
+- Visualization support
 
 tuatara is not intended for interactive browsing of your library;
 tell it what to play, and it plays it.

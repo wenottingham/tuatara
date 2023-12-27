@@ -5,12 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0+
 #
 
-import io
-
-
-from PIL import Image, ImageEnhance, UnidentifiedImageError
-
-from tuatara.settings import settings
+from tuatara.image_utils import image_from_file, image_from_buffer
 
 
 class CoverArt:
@@ -20,18 +15,6 @@ class CoverArt:
 
     def get_image(self):
         pass
-
-    def argb_and_enhance(self, image):
-        if image.mode == "RGB":
-            image = image.convert("RGBA")
-        if image.mode == "RGBA":
-            r, g, b, a = image.split()
-            image = Image.merge("RGBA", (b, g, r, a))
-        image = ImageEnhance.Brightness(image).enhance(
-            settings.art.get("brightness_adj")
-        )
-        image = ImageEnhance.Contrast(image).enhance(settings.art.get("contrast_adj"))
-        return image
 
 
 class FileCoverArt(CoverArt):
@@ -47,12 +30,7 @@ class FileCoverArt(CoverArt):
         self.path = path
 
     def get_image(self):
-        try:
-            img = Image.open(self.path)
-        except UnidentifiedImageError:
-            return None
-        img.load()
-        self.imgdata = self.argb_and_enhance(img)
+        self.imgdata = image_from_file(self.path)
         return self.imgdata
 
 
@@ -65,13 +43,7 @@ class InlineCoverArt(CoverArt):
             self.set_from_buffer(buffer)
 
     def set_from_buffer(self, buffer):
-        iobuffer = io.BytesIO(buffer)
-        try:
-            img = Image.open(iobuffer)
-        except UnidentifiedImageError:
-            return
-        img.load()
-        self.imgdata = self.argb_and_enhance(img)
+        self.imgdata = image_from_buffer(buffer)
 
     def get_image(self):
         return self.imgdata

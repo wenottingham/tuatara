@@ -88,6 +88,32 @@ class Interface:
         ditherer.bitmap(self.canvas, offsetx, offsety, width, height, art.tobytes())
         self.current_art = cover_art
 
+    def display_visualization(self, vis_frame):
+        if self.horizontal:
+            width = self.width - self.window_width
+            height = self.window_height
+        else:
+            width = self.width
+            height = self.height - self.window_height
+
+        if not vis_frame:
+            return
+
+        ditherer = Dither(
+            32,
+            vis_frame.size[0],
+            vis_frame.size[1],
+            4 * vis_frame.size[0],
+            0x00FF0000,
+            0x0000FF00,
+            0x000000FF,
+            0xFF000000,
+        )
+        ditherer.set_algorithm(bytes(settings.art.get("dither"), "utf-8"))
+        ditherer.set_charset(bytes(settings.art.get("charset"), "utf-8"))
+
+        ditherer.bitmap(self.canvas, 0, 0, width, height, vis_frame.tobytes())
+
     def display_info(self, player):
         def fitted_text(text):
             if len(text) > (self.window_width - 2):
@@ -138,8 +164,11 @@ class Interface:
 
         if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
-        if not self.current_art and track.cover_art:
-            self.display_cover_art(track.cover_art)
+        if player.visualization_active():
+            self.display_visualization(player.vis_frame)
+        else:
+            if not self.current_art and track.cover_art:
+                self.display_cover_art(track.cover_art)
 
         if self.help_shown:
             self.blit_help()
@@ -148,7 +177,7 @@ class Interface:
         return True
 
     def populate_help(self):
-        hc = Canvas(39, 15)
+        hc = Canvas(39, 16)
         helptext = [
             "?, h    : Show this help screen",
             "Space   : Toggle play/pause",
@@ -157,6 +186,7 @@ class Interface:
             "p, PgUp : Previous track",
             "n, PgDn : Next track",
             "m       : Toggle mute/unmute",
+            "v       : Toggle visulization",
             "+, =    : Volume up",
             "-, _    : Volume down",
             "Esc     : Close help screen",
@@ -224,6 +254,8 @@ class Interface:
                         player.prev()
                     case "m":
                         player.mute_or_unmute()
+                    case "v":
+                        player.toggle_visualization()
                     case "+" | "=":
                         player.raise_volume()
                     case "-" | "_":
