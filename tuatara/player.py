@@ -15,37 +15,35 @@ import gi
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst  # noqa: E402
 
-GST_PLAY_FLAG_VIS = 1 << 3
-
 
 class Player:
     def __init__(self):
+        GST_PLAY_FLAG_VIS = 1 << 3
         Gst.init()
         self.playlist = []
         self.player = Gst.ElementFactory.make("playbin", "player")
-        fakesink = Gst.ElementFactory.make("gdkpixbufsink", "fakesink")
-        self.player.set_property("video-sink", fakesink)
-        plugin = settings.art.get("visualization")
-        if plugin is not None:
-            self.vis_plugin = Gst.ElementFactory.make(plugin, "vis")
-        else:
-            self.vis_plugin = None
+        self.pixbuf_sink = Gst.ElementFactory.make("gdkpixbufsink", "pixbuf_sink")
+        self.pixbuf_sink.set_property("post-messages", False)
+        self.player.set_property("video-sink", self.pixbuf_sink)
+        self.vis_plugin = Gst.ElementFactory.make(
+            settings.art.get("visualization", "vis")
+        )
+        if self.vis_plugin:
+            flags = self.player.get_property("flags")
+            flags |= GST_PLAY_FLAG_VIS
+            self.player.set_property("flags", flags)
+            self.player.set_property("vis-plugin", self.vis_plugin)
         bus = self.player.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.on_message)
         self.status = "prep"
-        self.vis_frame = None
         self.mainloop = None
         self.error = None
-        self.interface = None
         self.current_track = None
 
     def set_playlist(self, playlist):
         self.playlist = playlist
         self.index = 0
-
-    def set_interface(self, interface):
-        self.interface = interface
 
     def cue_from_playlist(self):
         entry = self.playlist[self.index]
@@ -92,8 +90,6 @@ class Player:
 
     def clear_current_track(self):
         self.current_track = None
-        if self.interface:
-            self.interface.clear()
 
     def get_current_track(self):
         return self.current_track
@@ -135,28 +131,11 @@ class Player:
         mute = self.player.get_property("mute")
         self.player.set_property("mute", not mute)
 
-    def visualization_active(self):
-        flags = self.player.get_property("flags")
-        return flags & GST_PLAY_FLAG_VIS
+    def vis_available(self):
+        return bool(self.vis_plugin)
 
-    def toggle_visualization(self):
-        flags = self.player.get_property("flags")
-        if flags & GST_PLAY_FLAG_VIS:
-            # Turn it off
-            flags ^= GST_PLAY_FLAG_VIS
-            self.player.set_property("flags", flags)
-            self.player.set_property("vis-plugin", None)
-            self.vis_frame = None
-            self.interface.clear()
-        else:
-            # Turn it on
-            if not self.vis_plugin:
-                debug("Visualization plugin not available or not configured")
-                return
-            flags |= GST_PLAY_FLAG_VIS
-            self.player.set_property("flags", flags)
-            self.player.set_property("vis-plugin", self.vis_plugin)
-            self.interface.clear()
+    def get_vis_frame(self):
+        return image_from_pixbuf(self.pixbuf_sink.get_property("last-pixbuf"))
 
     def get_status_str(self):
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
@@ -239,12 +218,6 @@ class Player:
             self.player.set_state(Gst.State.NULL)
             err, debug = message.parse_error()
             self.stop(err)
-        elif t == Gst.MessageType.ELEMENT:
-            s = message.get_structure()
-            if not s or not s.has_name("pixbuf"):
-                return
-            pixbuf = s.get_value("pixbuf")
-            self.vis_frame = image_from_pixbuf(pixbuf)
 
     def set_mainloop(self, loop):
         self.mainloop = loop

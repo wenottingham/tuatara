@@ -56,6 +56,8 @@ def image_from_buffer(buffer):
 
 
 def image_from_pixbuf(pixbuf):
+    if not pixbuf:
+        return None
     data = pixbuf.get_pixels()
     mode = "RGB"
     if pixbuf.props.has_alpha is True:

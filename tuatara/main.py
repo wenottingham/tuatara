@@ -93,7 +93,6 @@ def main():
     player.set_playlist(playlist)
 
     interface = Interface()
-    player.set_interface(interface)
 
     player.cue_from_playlist()
     loop = GLib.MainLoop()
