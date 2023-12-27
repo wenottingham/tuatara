@@ -24,6 +24,7 @@ class Settings:
                 "charset": "ascii",
                 "brightness_adj": 0.75,
                 "contrast_adj": 1.25,
+                "visualization": "synaescope",
             },
         }
         self._debugobj = None
@@ -47,7 +48,7 @@ class Settings:
                         continue
                     sys.stderr.write("Error: 'font_ratio' must be a positive number\n")
                     errors += 1
-                case "dither" | "charset":
+                case "dither" | "charset" | "visualization":
                     if isinstance(datum, str):
                         continue
                     sys.stderr.write(f"Error: '{item}' must be a string\n")

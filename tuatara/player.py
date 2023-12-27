@@ -7,12 +7,15 @@
 
 
 from tuatara.cover_art import InlineCoverArt
-from tuatara.settings import debug
+from tuatara.image_utils import image_from_pixbuf
+from tuatara.settings import settings, debug
 
 import gi
 
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst  # noqa: E402
+
+GST_PLAY_FLAG_VIS = 1 << 3
 
 
 class Player:
@@ -20,12 +23,18 @@ class Player:
         Gst.init()
         self.playlist = []
         self.player = Gst.ElementFactory.make("playbin", "player")
-        fakesink = Gst.ElementFactory.make("fakesink", "fakesink")
+        fakesink = Gst.ElementFactory.make("gdkpixbufsink", "fakesink")
         self.player.set_property("video-sink", fakesink)
+        plugin = settings.art.get("visualization")
+        if plugin is not None:
+            self.vis_plugin = Gst.ElementFactory.make(plugin, "vis")
+        else:
+            self.vis_plugin = None
         bus = self.player.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.on_message)
         self.status = "prep"
+        self.vis_frame = None
         self.mainloop = None
         self.error = None
         self.interface = None
@@ -126,6 +135,29 @@ class Player:
         mute = self.player.get_property("mute")
         self.player.set_property("mute", not mute)
 
+    def visualization_active(self):
+        flags = self.player.get_property("flags")
+        return flags & GST_PLAY_FLAG_VIS
+
+    def toggle_visualization(self):
+        flags = self.player.get_property("flags")
+        if flags & GST_PLAY_FLAG_VIS:
+            # Turn it off
+            flags ^= GST_PLAY_FLAG_VIS
+            self.player.set_property("flags", flags)
+            self.player.set_property("vis-plugin", None)
+            self.vis_frame = None
+            self.interface.clear()
+        else:
+            # Turn it on
+            if not self.vis_plugin:
+                debug("Visualization plugin not available or not configured")
+                return
+            flags |= GST_PLAY_FLAG_VIS
+            self.player.set_property("flags", flags)
+            self.player.set_property("vis-plugin", self.vis_plugin)
+            self.interface.clear()
+
     def get_status_str(self):
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
         (set, track_len) = self.player.query_duration(Gst.Format.TIME)
@@ -207,6 +239,12 @@ class Player:
             self.player.set_state(Gst.State.NULL)
             err, debug = message.parse_error()
             self.stop(err)
+        elif t == Gst.MessageType.ELEMENT:
+            s = message.get_structure()
+            if not s or not s.has_name("pixbuf"):
+                return
+            pixbuf = s.get_value("pixbuf")
+            self.vis_frame = image_from_pixbuf(pixbuf)
 
     def set_mainloop(self, loop):
         self.mainloop = loop

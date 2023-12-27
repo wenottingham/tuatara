@@ -105,7 +105,7 @@ def main():
         interface.process_keys,
         player,
     )
-    GLib.timeout_add(120, interface.display_info, player)
+    GLib.timeout_add(20, interface.display_info, player)
     loop.run()
 
     if player.error:
