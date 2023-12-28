@@ -14,7 +14,7 @@ from caca.canvas import Canvas, NullCanvas
 from caca.display import Display, Event
 from caca.dither import Dither
 
-from tuatara.settings import settings
+from tuatara.settings import settings, debug
 
 
 class Interface:
@@ -27,6 +27,9 @@ class Interface:
         self.current_art = None
         self.help_canvas = self.populate_help()
         self.help_shown = False
+        self.vis_shown = False
+        self.clear_display = False
+        self.last_track = None
 
     def set_size(self):
         self.width = self.canvas.get_width()
@@ -51,11 +54,6 @@ class Interface:
                 self.window_height = 7
             self.height_offset = self.height - self.window_height
             self.width_offset = 0
-
-    def clear(self):
-        self.current_art = None
-        self.canvas.clear()
-        self.display.refresh()
 
     def display_cover_art(self, cover_art):
         if self.horizontal:
@@ -88,16 +86,16 @@ class Interface:
         ditherer.bitmap(self.canvas, offsetx, offsety, width, height, art.tobytes())
         self.current_art = cover_art
 
-    def display_visualization(self, vis_frame):
+    def display_vis(self, vis_frame):
+        if not vis_frame:
+            return
+
         if self.horizontal:
             width = self.width - self.window_width
             height = self.window_height
         else:
             width = self.width
             height = self.height - self.window_height
-
-        if not vis_frame:
-            return
 
         ditherer = Dither(
             32,
@@ -139,12 +137,24 @@ class Interface:
             )
 
         track = player.get_current_track()
+
+        if track != self.last_track:
+            self.clear_display = True
+        self.last_track = track
+
         if not track:
+            self.canvas.clear()
+            self.display.refresh()
             return True
 
         (ready, status_str) = player.get_status_str()
         if not ready:
             return True
+
+        if self.clear_display:
+            self.current_art = False
+            self.canvas.clear()
+            self.clear_display = False
 
         if track.title:
             titlestr = fitted_text(track.title)
@@ -164,8 +174,8 @@ class Interface:
 
         if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
-        if player.visualization_active():
-            self.display_visualization(player.vis_frame)
+        if self.vis_shown:
+            self.display_vis(player.get_vis_frame())
         else:
             if not self.current_art and track.cover_art:
                 self.display_cover_art(track.cover_art)
@@ -186,7 +196,7 @@ class Interface:
             "p, PgUp : Previous track",
             "n, PgDn : Next track",
             "m       : Toggle mute/unmute",
-            "v       : Toggle visulization",
+            "v       : Toggle visualization",
             "+, =    : Volume up",
             "-, _    : Volume down",
             "Esc     : Close help screen",
@@ -209,13 +219,16 @@ class Interface:
             NullCanvas(),
         )
 
+    def toggle_vis(self):
+        self.vis_shown = not self.vis_shown
+        self.clear_display = True
+
     def show_help(self):
         self.help_shown = True
 
     def hide_help(self):
         self.help_shown = False
-        self.current_art = False
-        self.canvas.clear()
+        self.clear_display = True
 
     def process_keys(self, fd, condition, player):
         ev = Event()
@@ -255,7 +268,12 @@ class Interface:
                     case "m":
                         player.mute_or_unmute()
                     case "v":
-                        player.toggle_visualization()
+                        if player.vis_available():
+                            self.toggle_vis()
+                        else:
+                            debug(
+                                "Visualization plugin not available or not configured!"
+                            )
                     case "+" | "=":
                         player.raise_volume()
                     case "-" | "_":
