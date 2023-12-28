@@ -15,10 +15,11 @@ import gi
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst  # noqa: E402
 
+GST_PLAY_FLAG_VIS = 1 << 3
+
 
 class Player:
     def __init__(self):
-        GST_PLAY_FLAG_VIS = 1 << 3
         Gst.init()
         self.playlist = []
         self.player = Gst.ElementFactory.make("playbin", "player")
@@ -63,6 +64,9 @@ class Player:
     def seek_forward(self):
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
         new_pos = track_pos + 10 * Gst.SECOND
+        flags = self.player.get_property("flags")
+        flags ^= GST_PLAY_FLAG_VIS
+        self.player.set_property("flags", flags)
         self.player.seek(
             1.0,
             Gst.Format.TIME,
@@ -72,12 +76,19 @@ class Player:
             Gst.SeekType.NONE,
             0,
         )
+        self.player.get_state(Gst.CLOCK_TIME_NONE)
+        flags = self.player.get_property("flags")
+        flags |= GST_PLAY_FLAG_VIS
+        self.player.set_property("flags", flags)
 
     def seek_reverse(self):
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
         new_pos = track_pos - 10 * Gst.SECOND
         if new_pos < 0:
             new_pos = 0
+        flags = self.player.get_property("flags")
+        flags ^= GST_PLAY_FLAG_VIS
+        self.player.set_property("flags", flags)
         self.player.seek(
             1.0,
             Gst.Format.TIME,
@@ -87,6 +98,10 @@ class Player:
             Gst.SeekType.NONE,
             0,
         )
+        self.player.get_state(Gst.CLOCK_TIME_NONE)
+        flags = self.player.get_property("flags")
+        flags |= GST_PLAY_FLAG_VIS
+        self.player.set_property("flags", flags)
 
     def clear_current_track(self):
         self.current_track = None
