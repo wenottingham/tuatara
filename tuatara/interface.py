@@ -6,6 +6,7 @@
 #
 
 import os
+import sys
 
 from urllib3.util import parse_url
 
@@ -13,6 +14,8 @@ import caca
 from caca.canvas import Canvas, NullCanvas
 from caca.display import Display, Event
 from caca.dither import Dither
+
+from gi.repository import GLib
 
 from tuatara.settings import settings, debug
 
@@ -30,6 +33,7 @@ class Interface:
         self.vis_shown = False
         self.clear_display = False
         self.last_track = None
+        self.mainloop = None
 
     def set_size(self):
         self.width = self.canvas.get_width()
@@ -135,6 +139,10 @@ class Interface:
                 self.height_offset + self.window_height // 2 + offset,
                 text,
             )
+
+        if player.get_status() == "done":
+            self.exit()
+            return False
 
         track = player.get_current_track()
 
@@ -256,6 +264,8 @@ class Interface:
                 match keychar:
                     case "q":
                         player.stop()
+                        self.exit()
+                        return False
                     case " ":
                         if player.status == "playing":
                             player.pause()
@@ -284,8 +294,20 @@ class Interface:
                         pass
         return True
 
+    def run(self, player):
+        self.mainloop = GLib.MainLoop()
+        GLib.unix_fd_add_full(
+            GLib.PRIORITY_DEFAULT,
+            sys.stdin.fileno(),
+            GLib.IO_IN,
+            self.process_keys,
+            player,
+        )
+        GLib.timeout_add(20, self.display_info, player)
+        self.mainloop.run()
+
     def exit(self):
         self.canvas.clear()
         self.display.refresh()
-        del self.display
-        del self.canvas
+        self.display = None  # reset terminal
+        self.mainloop.quit()
