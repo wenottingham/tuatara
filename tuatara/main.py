@@ -88,11 +88,11 @@ def main():
         print("Nothing to play.")
         return 1
 
+    interface = Interface()
+    sys.excepthook = interface.excepthook
+
     player = Player()
     player.set_playlist(playlist)
-
-    interface = Interface()
-
     player.cue_from_playlist()
     interface.run(player)
 

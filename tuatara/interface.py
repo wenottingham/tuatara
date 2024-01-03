@@ -7,6 +7,7 @@
 
 import os
 import sys
+import traceback
 
 from urllib3.util import parse_url
 
@@ -141,7 +142,7 @@ class Interface:
             )
 
         if player.get_status() == "done":
-            self.exit()
+            self.stop()
             return False
 
         track = player.get_current_track()
@@ -257,6 +258,9 @@ class Interface:
                         player.seek_reverse()
                     case caca.KEY_RIGHT:
                         player.seek_forward()
+                    case caca.KEY_CTRL_C:
+                        self.stop()
+                        return False
                     case _:
                         pass
             else:
@@ -264,7 +268,7 @@ class Interface:
                 match keychar:
                     case "q":
                         player.stop()
-                        self.exit()
+                        self.stop()
                         return False
                     case " ":
                         if player.status == "playing":
@@ -294,6 +298,14 @@ class Interface:
                         pass
         return True
 
+    def excepthook(self, ex_type, ex_value, tb):
+        if settings.debug:
+            traceback.print_exception(ex_type, ex_value, tb, None, settings._debugobj)
+            settings._debugobj.flush()
+        self.stop(exit=False)
+        traceback.print_exception(ex_type, ex_value, tb)
+        self.mainloop.quit()
+
     def run(self, player):
         self.mainloop = GLib.MainLoop()
         GLib.unix_fd_add_full(
@@ -306,8 +318,9 @@ class Interface:
         GLib.timeout_add(20, self.display_info, player)
         self.mainloop.run()
 
-    def exit(self):
+    def stop(self, exit=True):
         self.canvas.clear()
         self.display.refresh()
         self.display = None  # reset terminal
-        self.mainloop.quit()
+        if exit:
+            self.mainloop.quit()
