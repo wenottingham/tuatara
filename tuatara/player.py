@@ -152,6 +152,9 @@ class Player:
     def get_vis_frame(self):
         return image_from_pixbuf(self.pixbuf_sink.get_property("last-pixbuf"))
 
+    def get_status(self):
+        return self.status
+
     def get_status_str(self):
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
         (set, track_len) = self.player.query_duration(Gst.Format.TIME)
@@ -187,8 +190,8 @@ class Player:
 
     def stop(self, error=None):
         self.player.set_state(Gst.State.NULL)
+        self.status = "done"
         self.error = error
-        self.mainloop.quit()
 
     def parse_tags(self, taglist, tagtype):
         match tagtype:
@@ -233,6 +236,3 @@ class Player:
             self.player.set_state(Gst.State.NULL)
             err, debug = message.parse_error()
             self.stop(err)
-
-    def set_mainloop(self, loop):
-        self.mainloop = loop

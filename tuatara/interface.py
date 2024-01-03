@@ -6,6 +6,8 @@
 #
 
 import os
+import sys
+import traceback
 
 from urllib3.util import parse_url
 
@@ -13,6 +15,8 @@ import caca
 from caca.canvas import Canvas, NullCanvas
 from caca.display import Display, Event
 from caca.dither import Dither
+
+from gi.repository import GLib
 
 from tuatara.settings import settings, debug
 
@@ -30,6 +34,7 @@ class Interface:
         self.vis_shown = False
         self.clear_display = False
         self.last_track = None
+        self.mainloop = None
 
     def set_size(self):
         self.width = self.canvas.get_width()
@@ -135,6 +140,10 @@ class Interface:
                 self.height_offset + self.window_height // 2 + offset,
                 text,
             )
+
+        if player.get_status() == "done":
+            self.stop()
+            return False
 
         track = player.get_current_track()
 
@@ -249,6 +258,9 @@ class Interface:
                         player.seek_reverse()
                     case caca.KEY_RIGHT:
                         player.seek_forward()
+                    case caca.KEY_CTRL_C:
+                        self.stop()
+                        return False
                     case _:
                         pass
             else:
@@ -256,6 +268,8 @@ class Interface:
                 match keychar:
                     case "q":
                         player.stop()
+                        self.stop()
+                        return False
                     case " ":
                         if player.status == "playing":
                             player.pause()
@@ -284,8 +298,29 @@ class Interface:
                         pass
         return True
 
-    def exit(self):
+    def excepthook(self, ex_type, ex_value, tb):
+        if settings.debug:
+            traceback.print_exception(ex_type, ex_value, tb, None, settings._debugobj)
+            settings._debugobj.flush()
+        self.stop(exit=False)
+        traceback.print_exception(ex_type, ex_value, tb)
+        self.mainloop.quit()
+
+    def run(self, player):
+        self.mainloop = GLib.MainLoop()
+        GLib.unix_fd_add_full(
+            GLib.PRIORITY_DEFAULT,
+            sys.stdin.fileno(),
+            GLib.IO_IN,
+            self.process_keys,
+            player,
+        )
+        GLib.timeout_add(20, self.display_info, player)
+        self.mainloop.run()
+
+    def stop(self, exit=True):
         self.canvas.clear()
         self.display.refresh()
-        del self.display
-        del self.canvas
+        self.display = None  # reset terminal
+        if exit:
+            self.mainloop.quit()

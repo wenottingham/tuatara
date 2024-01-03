@@ -14,7 +14,6 @@ import sys
 
 from urllib3.util import parse_url
 
-from gi.repository import GLib
 
 from tuatara.interface import Interface
 from tuatara.playlist import parse_directory, parse_file
@@ -89,29 +88,17 @@ def main():
         print("Nothing to play.")
         return 1
 
+    interface = Interface()
+    sys.excepthook = interface.excepthook
+
     player = Player()
     player.set_playlist(playlist)
-
-    interface = Interface()
-
     player.cue_from_playlist()
-    loop = GLib.MainLoop()
-    player.set_mainloop(loop)
-    GLib.unix_fd_add_full(
-        GLib.PRIORITY_DEFAULT,
-        sys.stdin.fileno(),
-        GLib.IO_IN,
-        interface.process_keys,
-        player,
-    )
-    GLib.timeout_add(20, interface.display_info, player)
-    loop.run()
+    interface.run(player)
 
     if player.error:
-        interface.exit()
         print(f"Error: {player.error}")
         return 1
     else:
-        interface.exit()
         print("All done.")
         return 0
