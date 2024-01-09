@@ -50,7 +50,7 @@ class Player:
         entry = self.playlist[self.index]
         self.current_track = entry
         debug(f"Playing {self.current_track}")
-        self.player.set_property("uri", entry.url)
+        self.player.set_property("uri", Gst.filename_to_uri(entry.url))
         self.play()
 
     def play(self):

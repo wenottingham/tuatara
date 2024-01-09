@@ -42,10 +42,9 @@ class PlaylistEntry:
         if parsed_url.scheme is None:
             # Assume file
             if url.startswith("/"):
-                self.url = f"file://{url}"
+                self.url = url
             else:
-                fullpath = os.path.join(os.getcwd(), url)
-                self.url = f"file://{fullpath}"
+                self.url = os.path.join(os.getcwd(), url)
         else:
             self.url = url
 
@@ -70,8 +69,8 @@ class PlaylistEntry:
 
         parsed_url = parse_url(self.url)
         # Check directory
-        if parsed_url.scheme == "file":
-            directory = os.path.dirname(parsed_url.path)
+        if parsed_url.scheme is None:
+            directory = os.path.dirname(self.url)
             with os.scandir(directory) as direntries:
                 for entry in direntries:
                     if entry.is_file() and (

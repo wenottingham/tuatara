@@ -13,13 +13,13 @@ def test_bad_file():
 def test_good_file():
     pl = parse_file("foo.flac")
     assert len(pl) == 1
-    assert pl[0].url == f"file://{os.path.join(os.getcwd(), 'foo.flac')}"
+    assert pl[0].url == f"{os.path.join(os.getcwd(), 'foo.flac')}"
 
 
 def test_good_abs_file():
     pl = parse_file("/somewhere/over/the/rainbow/foo.flac")
     assert len(pl) == 1
-    assert pl[0].url == "file:///somewhere/over/the/rainbow/foo.flac"
+    assert pl[0].url == "/somewhere/over/the/rainbow/foo.flac"
 
 
 def test_url():
@@ -52,7 +52,7 @@ https://example.com/test2.flac
         print(item.url)
     assert len(pl) == 2
     assert pl[0].url == "https://example.com/test2.flac"
-    assert pl[1].url == f"file://{tmp_path}/tmp.flac"
+    assert pl[1].url == f"{tmp_path}/tmp.flac"
 
 
 def test_bad_m3u(tmp_path):
@@ -81,6 +81,6 @@ def test_directory_walk():
         pl = parse_directory("fakedir")
         urls = list(map(lambda x: x.url, pl))
         assert len(pl) == 3
-        assert "file:///foo/file.flac" in urls
-        assert "file:///foo/bar/file2.flac" in urls
-        assert "file:///foo/baz/file3.flac" in urls
+        assert "/foo/file.flac" in urls
+        assert "/foo/bar/file2.flac" in urls
+        assert "/foo/baz/file3.flac" in urls
