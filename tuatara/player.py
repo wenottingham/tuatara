@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0+
 #
 
+from urllib3.util import parse_url
 
 from tuatara.cover_art import InlineCoverArt
 from tuatara.image_utils import image_from_pixbuf
@@ -50,7 +51,11 @@ class Player:
         entry = self.playlist[self.index]
         self.current_track = entry
         debug(f"Playing {self.current_track}")
-        self.player.set_property("uri", Gst.filename_to_uri(entry.url))
+        p = parse_url(entry.url)
+        if p.scheme:
+            self.player.set_property("uri", entry.url)
+        else:
+            self.player.set_property("uri", Gst.filename_to_uri(entry.url))
         self.play()
 
     def play(self):
