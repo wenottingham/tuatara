@@ -50,7 +50,7 @@ def setup_config(args=sys.argv[1:]):
         "-d", "--debug", help="Log debugging information", action="store_true"
     )
     parser.add_argument("--debugfile", help="Debug log file name", action="store")
-    parser.add_argument("--version", action="version", version="%(prog)s 0.2.1")
+    parser.add_argument("--version", action="version", version="%(prog)s 0.3.0")
     args = parser.parse_args(args)
 
     if not load_config(args):
