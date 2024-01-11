@@ -132,6 +132,20 @@ def test_musicbrainz_artist_with_tracks(capsys):
     assert "mbid-addc312e-3c20-400e-bbd4-69946bb82a2b-7697873196.jpg" in cap.err
 
 
+def test_musicbrainz_multidisc(capsys):
+    f = MusicBrainzArtFetcher()
+    settings._debugobj = sys.stderr
+
+    multidisc = entry(
+        "Phish",
+        "Live Phish, Volume 03: 2000-09-14: Darien Lake Performing Arts Center, Darien Center, NY, USA (disc 3)",
+        tracks=5,
+    )
+    f.fetch(multidisc)
+    cap = capsys.readouterr()
+    assert "mbid-e76385ff-427e-4e52-9628-f81350d56d5b-27135810077.jpg" in cap.err
+
+
 def test_async_apple(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     settings._settings["art"]["fetchers"] = ["apple"]

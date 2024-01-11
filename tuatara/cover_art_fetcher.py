@@ -127,9 +127,18 @@ class MusicBrainzArtFetcher(ArtFetcher):
         }
 
     def fetch(self, track):
+        def multi_filter(collection_item, tracks):
+            for disc in collection_item["media"]:
+                if disc["track-count"] == tracks:
+                    return True
+            return False
+
         s_artist = sanitize_artist(track.artist)
         s_album = sanitize_album(track.album)
         tracks = track.track_total
+        multidisc = False
+        if re.search(r" [\(\[{]disc [^\)\]}]+[\)\]}]", track.album, re.IGNORECASE):
+            multidisc = True
 
         debug(f"Finding art for {track} via MusicBrainz…")
         path = f"https://musicbrainz.org/ws/2/artist?limit=5&query={s_artist}"
@@ -167,10 +176,16 @@ class MusicBrainzArtFetcher(ArtFetcher):
 
         # Filter by number of tracks
         if tracks:
-            debug(f"Filtering by {tracks} tracks")
-            filtered_results = list(
-                filter(lambda x: x["track-count"] == tracks, results)
-            )
+            if multidisc:
+                debug(f"Filtering by {tracks} tracks in a multidisc collection")
+                filtered_results = list(
+                    filter(lambda x: multi_filter(x, tracks), results)
+                )
+            else:
+                debug(f"Filtering by {tracks} tracks")
+                filtered_results = list(
+                    filter(lambda x: x["track-count"] == tracks, results)
+                )
         else:
             filtered_results = results
 
