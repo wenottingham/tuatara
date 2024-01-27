@@ -10,7 +10,7 @@ include = ["sample-tuatara.toml"]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
-pillow = "^10.1.0"
+pillow = "^10.2.0"
 urllib3 = "^2.1.0"
 pygobject = "^3.46.0"
 m3u8 = "^4.0.0"
