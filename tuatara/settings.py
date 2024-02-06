@@ -11,6 +11,8 @@ import tomllib
 
 from datetime import datetime
 
+version = "0.3.0"
+
 
 class Settings:
     def __init__(self):

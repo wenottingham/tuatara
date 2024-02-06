@@ -18,14 +18,14 @@ from caca.dither import Dither
 
 from gi.repository import GLib
 
-from tuatara.settings import settings, debug
+from tuatara.settings import settings, debug, version
 
 
 class Interface:
     def __init__(self):
         self.canvas = Canvas(0, 0)
         self.display = Display(self.canvas, driver="ncurses")
-        self.display.set_title("Tuatara")
+        self.display.set_title(f"Tuatara {version}")
         self.set_size()
         self.canvas.set_color_ansi(caca.COLOR_LIGHTGRAY, caca.COLOR_BLACK)
         self.current_art = None
@@ -167,11 +167,13 @@ class Interface:
 
         if track.title:
             titlestr = fitted_text(track.title)
+            windowtitle = f"{track.artist} - {track.title}"
         else:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
+            windowtitle = titlestr
         display_str(fitted_text(titlestr), -2, caca.STYLE_BOLD)
-        self.display.set_title(f"Tuatara - {titlestr}")
+        self.display.set_title(windowtitle)
 
         if track.artist:
             display_str(fitted_text(track.artist), -1)
@@ -196,7 +198,7 @@ class Interface:
         return True
 
     def populate_help(self):
-        hc = Canvas(39, 16)
+        hc = Canvas(39, 18)
         helptext = [
             "?, h    : Show this help screen",
             "Space   : Toggle play/pause",
@@ -212,10 +214,13 @@ class Interface:
             "q       : Quit",
         ]
 
+        helptitle = f"Tuatara {version}"
         hc.draw_cp437_box(0, 0, hc.get_width(), hc.get_height())
 
+        hc.put_str(int((39 - len(helptitle)) / 2), 2, helptitle)
+
         for line in helptext:
-            hc.put_str(2, 2 + helptext.index(line), line)
+            hc.put_str(2, 4 + helptext.index(line), line)
 
         hc.set_handle(hc.get_width() // 2, hc.get_height() // 2)
         return hc
