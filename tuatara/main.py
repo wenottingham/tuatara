@@ -18,7 +18,7 @@ from urllib3.util import parse_url
 from tuatara.interface import Interface
 from tuatara.playlist import parse_directory, parse_file
 from tuatara.player import Player
-from tuatara.settings import settings, config_dir
+from tuatara.settings import settings, config_dir, version
 
 
 def setup_config(args=sys.argv[1:]):
@@ -50,7 +50,7 @@ def setup_config(args=sys.argv[1:]):
         "-d", "--debug", help="Log debugging information", action="store_true"
     )
     parser.add_argument("--debugfile", help="Debug log file name", action="store")
-    parser.add_argument("--version", action="version", version="%(prog)s 0.3.0")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {version}")
     args = parser.parse_args(args)
 
     if not load_config(args):
