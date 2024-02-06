@@ -167,11 +167,13 @@ class Interface:
 
         if track.title:
             titlestr = fitted_text(track.title)
+            windowtitle = f"{track.artist} - {track.title}"
         else:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
+            windowtitle = titlestr
         display_str(fitted_text(titlestr), -2, caca.STYLE_BOLD)
-        self.display.set_title(f"Tuatara - {titlestr}")
+        self.display.set_title(windowtitle)
 
         if track.artist:
             display_str(fitted_text(track.artist), -1)
