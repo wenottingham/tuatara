@@ -109,7 +109,7 @@ def test_musicbrainz_escaped_artist(capsys):
     escaped_artist = entry("Rodrigo y Gabriela & C.U.B.A", "Area 52", tracks=9)
     f.fetch(escaped_artist)
     cap = capsys.readouterr()
-    assert "mbid-9a5f7dd2-0044-4506-b835-83028cc45a90-15578294208.jpg" in cap.err
+    assert "mbid-022a1668-525d-427f-bab3-5380701e7108-7245530744.jpg" in cap.err
 
 
 def test_musicbrainz_artist_without_tracks(capsys):
@@ -119,7 +119,7 @@ def test_musicbrainz_artist_without_tracks(capsys):
     artist_no_tracks = entry("Florence + the Machine", "Ceremonials")
     f.fetch(artist_no_tracks)
     cap = capsys.readouterr()
-    assert "mbid-5e06f918-f14d-44be-bd97-5ffdd9f35d31-19577602268.jpg" in cap.err
+    assert "mbid-11973ebc-0f5a-4aa4-ad79-e194f88d23e6-12512633102.jpg" in cap.err
 
 
 def test_musicbrainz_artist_with_tracks(capsys):

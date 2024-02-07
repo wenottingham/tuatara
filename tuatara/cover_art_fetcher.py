@@ -157,7 +157,9 @@ class MusicBrainzArtFetcher(ArtFetcher):
         # Go with the first artist
         artist_id = jsondata["artists"][0]["id"]
 
-        path = f'https://musicbrainz.org/ws/2/release?query="{s_album}" AND arid:{artist_id}'
+        path = f'https://musicbrainz.org/ws/2/release?query=release:"{s_album}" AND arid:{artist_id}'
+        if tracks:
+            path += f" AND tracksmedium:{tracks}"
         resp = self.http.request("GET", path, headers=self.headers)
         if resp.status != 200:
             debug(f"Album search failed with {resp.status}")
@@ -175,19 +177,14 @@ class MusicBrainzArtFetcher(ArtFetcher):
         results = list(filter(lambda x: x["score"] > 90, jsondata["releases"]))
 
         # Filter by number of tracks
-        if tracks:
-            if multidisc:
-                debug(f"Filtering by {tracks} tracks in a multidisc collection")
-                filtered_results = list(
-                    filter(lambda x: multi_filter(x, tracks), results)
-                )
-            else:
-                debug(f"Filtering by {tracks} tracks")
-                filtered_results = list(
-                    filter(lambda x: x["track-count"] == tracks, results)
-                )
+        if tracks and multidisc:
+            debug(f"Filtering by {tracks} tracks in a multidisc collection")
+            filtered_results = list(filter(lambda x: multi_filter(x, tracks), results))
         else:
             filtered_results = results
+
+        # MusicBrainz search isn't idempotent for multiple score=100 entries
+        filtered_results = sorted(filtered_results, key=lambda x: (x["score"], x["id"]))
 
         ids = list(map(lambda x: x["id"], filtered_results))
         debug(f"Filtered album search yielded {ids}")
