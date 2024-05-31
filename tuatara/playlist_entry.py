@@ -82,7 +82,7 @@ class PlaylistEntry:
                         )
                         return
 
-        if not self.album and not self.artist:
+        if not self.album or not self.artist:
             return
 
         # Check cache
