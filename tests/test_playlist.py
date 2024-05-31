@@ -16,6 +16,12 @@ def test_good_file():
     assert pl[0].url == f"{os.path.join(os.getcwd(), 'foo.flac')}"
 
 
+def test_good_case_file():
+    pl = parse_file("FOO.OPUS")
+    assert len(pl) == 1
+    assert pl[0].url == f"{os.path.join(os.getcwd(), 'FOO.OPUS')}"
+
+
 def test_good_abs_file():
     pl = parse_file("/somewhere/over/the/rainbow/foo.flac")
     assert len(pl) == 1

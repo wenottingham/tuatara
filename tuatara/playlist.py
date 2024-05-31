@@ -11,15 +11,15 @@ import m3u8
 
 from tuatara.playlist_entry import PlaylistEntry
 
-interesting_ext = [".flac", ".mp3", ".m4a"]
+interesting_ext = [".flac", ".mp3", ".m4a", ".opus"]
 
 
 def parse_file(path, allow_m3u=False):
     for ext in interesting_ext:
-        if path.endswith(ext):
+        if path.lower().endswith(ext):
             return [PlaylistEntry(path)]
     if allow_m3u:
-        if path.endswith(".m3u") or path.endswith("m3u8"):
+        if path.lower().endswith(".m3u") or path.lower().endswith("m3u8"):
             playlist = []
             pl = m3u8.load(path)
             for entry in pl.segments:
