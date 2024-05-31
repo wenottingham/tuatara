@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tuatara"
-version = "0.3.1"
+version = "0.3.2"
 description = "Tuatara is a text-mode music player."
 authors = ["Bill Nottingham <notting@splat.cc>"]
 license = "GPL-3.0+"
@@ -17,8 +17,8 @@ m3u8 = "^4.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.3"
-pex = "^2.1.154"
+pytest = "^8.2.1"
+pex = "^2.3.1"
 
 [tool.poetry.scripts]
 tuatara = 'tuatara.main:main'

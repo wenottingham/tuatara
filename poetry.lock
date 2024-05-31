@@ -46,13 +46,13 @@ files = [
 
 [[package]]
 name = "pex"
-version = "2.3.0"
+version = "2.3.1"
 description = "The PEX packaging toolchain."
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,<3.13,>=2.7"
 files = [
-    {file = "pex-2.3.0-py2.py3-none-any.whl", hash = "sha256:6c0ccbaa99fe15174fb1560c01ba0416579a057eed7ac90453324b18356f9b40"},
-    {file = "pex-2.3.0.tar.gz", hash = "sha256:7d0fc86236192fbc14a71b25081e9c48c543d7dbc1e7b270d62eff88afd2245c"},
+    {file = "pex-2.3.1-py2.py3-none-any.whl", hash = "sha256:64692a5bf6f298403aab930d22f0d836ae4736c5bc820e262e9092fe8c56f830"},
+    {file = "pex-2.3.1.tar.gz", hash = "sha256:d1264c91161c21139b454744c8053e25b8aad2d15da89232181b4f38f3f54575"},
 ]
 
 [package.extras]
@@ -146,13 +146,13 @@ xmp = ["defusedxml"]
 
 [[package]]
 name = "pluggy"
-version = "1.4.0"
+version = "1.5.0"
 description = "plugin and hook calling mechanisms for python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pluggy-1.4.0-py3-none-any.whl", hash = "sha256:7db9f7b503d67d1c5b95f59773ebb58a8c1c288129a88665838012cfb07b8981"},
-    {file = "pluggy-1.4.0.tar.gz", hash = "sha256:8c85c2876142a764e5b7548e7d9a0e0ddb46f5185161049a79b7e974454223be"},
+    {file = "pluggy-1.5.0-py3-none-any.whl", hash = "sha256:44e1ad92c8ca002de6377e165f3e0f1be63266ab4d554740532335b9d75ea669"},
+    {file = "pluggy-1.5.0.tar.gz", hash = "sha256:2cffa88e94fdc978c4c574f15f9e59b7f4201d439195c3715ca9e2486f1d0cf1"},
 ]
 
 [package.extras]
@@ -202,23 +202,23 @@ docs = ["sphinx (>=4.0,<5.0)", "sphinx-rtd-theme (>=0.5,<2.0)"]
 
 [[package]]
 name = "pytest"
-version = "7.4.4"
+version = "8.2.1"
 description = "pytest: simple powerful testing with Python"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "pytest-7.4.4-py3-none-any.whl", hash = "sha256:b090cdf5ed60bf4c45261be03239c2c1c22df034fbffe691abe93cd80cea01d8"},
-    {file = "pytest-7.4.4.tar.gz", hash = "sha256:2cf0005922c6ace4a3e2ec8b4080eb0d9753fdc93107415332f50ce9e7994280"},
+    {file = "pytest-8.2.1-py3-none-any.whl", hash = "sha256:faccc5d332b8c3719f40283d0d44aa5cf101cec36f88cde9ed8f2bc0538612b1"},
+    {file = "pytest-8.2.1.tar.gz", hash = "sha256:5046e5b46d8e4cac199c373041f26be56fdb81eb4e67dc11d4e10811fc3408fd"},
 ]
 
 [package.dependencies]
 colorama = {version = "*", markers = "sys_platform == \"win32\""}
 iniconfig = "*"
 packaging = "*"
-pluggy = ">=0.12,<2.0"
+pluggy = ">=1.5,<2.0"
 
 [package.extras]
-testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
+dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
 
 [[package]]
 name = "urllib3"
@@ -240,4 +240,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "9d716bc3a9aa60c43c6c1c29bdc4079474da41a55b918520d25121b7e38d19e0"
+content-hash = "d8a97c74f7c59dde878573cd65265874aa53e2b94d26fe21afcdeffc4b0e3989"
