@@ -65,15 +65,13 @@ Controls are not case-sensitive.
 System requirements:
 - GStreamer (with appropriate plugins)
 - GObject-introspection
-- libcaca
 
 Python requirements:
 - PyGObject
 - Pillow
 - urllib3
 - m3u8
-
-libcaca Python bindings are bundled for convenience.
+- blessed
 
 tuatara is only tested on Linux. macOS or Windows may theoretically work.
 
@@ -87,8 +85,9 @@ When submitting changes:
 
 tuatara is licensed under the GPL, version 3.0 or later.
 
-libcaca bindings by Alex Foulon <alxf@lavabit.com>, originally licensed
-under WTFPL-2.0.
+Python ascii art implementation inspired and cribbed from
+[ascii-wizard](https://pypi.org/project/ascii-wizard/) and
+[artem](https://docs.rs/artem/latest/artem/index.html).
 
 # Why 'tuatara'?
 

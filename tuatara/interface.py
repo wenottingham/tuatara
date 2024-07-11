@@ -62,43 +62,37 @@ class Interface:
             self.width_offset = 0
         self.clear_display = True
 
-    def display_cover_art(self, cover_art):
-        return
-        # needs ported
-        if self.horizontal:
-            width = self.width - self.window_width - 2
-            height = int(width // settings.art.get("font_ratio")) - 2
-            offsetx = 1
-            offsety = (self.height - height) // 2
-        else:
-            height = self.height - self.window_height - 2
-            width = int(height * settings.art.get("font_ratio")) - 2
-            offsety = 1
-            offsetx = (self.width - width) // 2
-
-        art = cover_art.get_image()
-        if not art:
-            return
-
-        # do something
-        self.current_art = cover_art
-
-    def display_vis(self, vis_frame):
-        # needs ported
-        return
-        if not vis_frame:
-            return
-
-        if self.horizontal:
-            width = self.width - self.window_width
-            height = self.window_height
-        else:
-            width = self.width
-            height = self.height - self.window_height
-
-        # do something
-
     def display_info(self, player):
+        def display_ascii(image):
+            if self.horizontal:
+                width = self.width - self.window_width - 2
+                height = int(width // settings.art.get("font_ratio")) - 2
+                offsetx = 1
+                offsety = (self.height - height) // 2
+            else:
+                height = self.height - self.window_height - 2
+                width = int(height * settings.art.get("font_ratio")) - 2
+                offsety = 1
+                offsetx = (self.width - width) // 2
+            CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
+
+            output = ""
+            img = image.resize((width, height))
+
+            grayscale_img = img.convert("L")
+
+            for h in range(height):
+                output += self.term.move_xy(offsetx, h + offsety)
+                for w in range(width):
+                    brightness = grayscale_img.getpixel((w, h)) / 255
+                    r, g, b = img.getpixel((w, h))[:3]
+                    ascii_char = CHAR_RAMP[int(brightness * (len(CHAR_RAMP) - 1))]
+
+                    output += self.term.on_color_rgb(r, g, b) + ascii_char
+                output += self.term.normal
+
+            print(output)
+
         def fitted_text(text):
             if len(text) > (self.window_width - 2):
                 trunc_text = text[: self.window_width - 3]
@@ -168,10 +162,11 @@ class Interface:
         if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
         if self.vis_shown:
-            self.display_vis(player.get_vis_frame())
+            display_ascii(player.get_vis_frame())
         else:
             if not self.current_art and track.cover_art:
-                self.display_cover_art(track.cover_art)
+                display_ascii(track.cover_art.get_image())
+                self.current_art = track.cover_art
 
         if self.help_shown:
             self.blit_help()
@@ -220,12 +215,14 @@ class Interface:
         offset = (self.height - h) // 2
         output = ""
         for line in self.help_canvas:
-            debug("width %d pos %d" % (self.width, (self.width - w) // 2))
             output += self.term.move_xy((self.width - w) // 2, offset) + line
             offset += 1
         print(output)
 
     def toggle_vis(self):
+        if not self.vis_shown and self.term.number_of_colors != 1 << 24:
+            debug("Visualiazion not available when not on a truecolor terminal")
+            return
         self.vis_shown = not self.vis_shown
         self.clear_display = True
 
