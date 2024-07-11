@@ -22,8 +22,6 @@ class Settings:
             "art": {
                 "fetchers": ["apple", "musicbrainz"],
                 "font_ratio": 2.0,
-                "dither": "fstein",
-                "charset": "ascii",
                 "brightness_adj": 0.75,
                 "contrast_adj": 1.25,
                 "visualization": "synaescope",
@@ -50,7 +48,7 @@ class Settings:
                         continue
                     sys.stderr.write("Error: 'font_ratio' must be a positive number\n")
                     errors += 1
-                case "dither" | "charset" | "visualization":
+                case "visualization":
                     if isinstance(datum, str):
                         continue
                     sys.stderr.write(f"Error: '{item}' must be a string\n")

@@ -6,15 +6,13 @@
 #
 
 import os
+import signal
 import sys
 import traceback
 
 from urllib3.util import parse_url
 
-import caca
-from caca.canvas import Canvas, NullCanvas
-from caca.display import Display, Event
-from caca.dither import Dither
+import blessed
 
 from gi.repository import GLib
 
@@ -23,22 +21,25 @@ from tuatara.settings import settings, debug, version
 
 class Interface:
     def __init__(self):
-        self.canvas = Canvas(0, 0)
-        self.display = Display(self.canvas, driver="ncurses")
-        self.display.set_title(f"Tuatara {version}")
+        self.term = blessed.Terminal()
+        self.set_title(f"Tutatara {version}")
+        self.term.enter_fullscreen()
         self.set_size()
-        self.canvas.set_color_ansi(caca.COLOR_LIGHTGRAY, caca.COLOR_BLACK)
         self.current_art = None
         self.help_canvas = self.populate_help()
         self.help_shown = False
         self.vis_shown = False
-        self.clear_display = False
         self.last_track = None
         self.mainloop = None
+        signal.signal(signal.SIGWINCH, self.set_size)
+        signal.signal(signal.SIGINT, self.stop)
 
-    def set_size(self):
-        self.width = self.canvas.get_width()
-        self.height = self.canvas.get_height()
+    def set_title(self, title):
+        print("\x1b]0;" + title + "\x07")
+
+    def set_size(self, signum=None, stack=None):
+        self.width = self.term.width
+        self.height = self.term.height
         if self.width > self.height * settings.art.get("font_ratio"):
             self.horizontal = True
             self.window_width = self.width - int(
@@ -59,65 +60,39 @@ class Interface:
                 self.window_height = 7
             self.height_offset = self.height - self.window_height
             self.width_offset = 0
-
-    def display_cover_art(self, cover_art):
-        if self.horizontal:
-            width = self.width - self.window_width - 2
-            height = int(width // settings.art.get("font_ratio")) - 2
-            offsetx = 1
-            offsety = (self.height - height) // 2
-        else:
-            height = self.height - self.window_height - 2
-            width = int(height * settings.art.get("font_ratio")) - 2
-            offsety = 1
-            offsetx = (self.width - width) // 2
-
-        art = cover_art.get_image()
-        if not art:
-            return
-
-        ditherer = Dither(
-            32,
-            art.size[0],
-            art.size[1],
-            4 * art.size[0],
-            0x00FF0000,
-            0x0000FF00,
-            0x000000FF,
-            0xFF000000,
-        )
-        ditherer.set_algorithm(bytes(settings.art.get("dither"), "utf-8"))
-        ditherer.set_charset(bytes(settings.art.get("charset"), "utf-8"))
-        ditherer.bitmap(self.canvas, offsetx, offsety, width, height, art.tobytes())
-        self.current_art = cover_art
-
-    def display_vis(self, vis_frame):
-        if not vis_frame:
-            return
-
-        if self.horizontal:
-            width = self.width - self.window_width
-            height = self.window_height
-        else:
-            width = self.width
-            height = self.height - self.window_height
-
-        ditherer = Dither(
-            32,
-            vis_frame.size[0],
-            vis_frame.size[1],
-            4 * vis_frame.size[0],
-            0x00FF0000,
-            0x0000FF00,
-            0x000000FF,
-            0xFF000000,
-        )
-        ditherer.set_algorithm(bytes(settings.art.get("dither"), "utf-8"))
-        ditherer.set_charset(bytes(settings.art.get("charset"), "utf-8"))
-
-        ditherer.bitmap(self.canvas, 0, 0, width, height, vis_frame.tobytes())
+        self.clear_display = True
 
     def display_info(self, player):
+        def display_ascii(image):
+            if self.horizontal:
+                width = self.width - self.window_width - 2
+                height = int(width // settings.art.get("font_ratio")) - 2
+                offsetx = 1
+                offsety = (self.height - height) // 2
+            else:
+                height = self.height - self.window_height - 2
+                width = int(height * settings.art.get("font_ratio")) - 2
+                offsety = 1
+                offsetx = (self.width - width) // 2
+            CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
+
+            output = ""
+            img = image.resize((width, height))
+
+            grayscale_img = img.convert("L")
+
+            for h in range(height):
+                output += self.term.move_xy(offsetx, h + offsety)
+                for w in range(width):
+                    brightness = grayscale_img.getpixel((w, h)) / 255
+                    r, g, b = img.getpixel((w, h))[:3]
+                    ascii_char = CHAR_RAMP[int(brightness * (len(CHAR_RAMP) - 1))]
+
+                    output += self.term.on_color_rgb(r, g, b) + ascii_char
+                output += self.term.normal
+
+            print(output)
+
         def fitted_text(text):
             if len(text) > (self.window_width - 2):
                 trunc_text = text[: self.window_width - 3]
@@ -128,18 +103,20 @@ class Interface:
         def centered_position(text):
             return self.width_offset + (self.window_width - len(text)) // 2
 
-        def display_str(text, offset, attr=0x00):
-            self.canvas.set_attr(attr)
-            self.canvas.put_str(
-                self.width_offset,
-                self.height_offset + self.window_height // 2 + offset,
-                " " * (self.width - self.width_offset),
+        def display_str(text, offset, attr=None):
+            output = self.term.move_xy(
+                self.width_offset, self.height_offset + self.window_height // 2 + offset
             )
-            self.canvas.put_str(
+            output += self.term.clear_eol
+            output += self.term.move_xy(
                 centered_position(text),
                 self.height_offset + self.window_height // 2 + offset,
-                text,
             )
+            if attr == "bold":
+                output += self.term.bold(text)
+            else:
+                output += text
+            print(output, end="")
 
         if player.get_status() == "done":
             self.stop()
@@ -152,8 +129,7 @@ class Interface:
         self.last_track = track
 
         if not track:
-            self.canvas.clear()
-            self.display.refresh()
+            print(self.term.clear())
             return True
 
         (ready, status_str) = player.get_status_str()
@@ -162,7 +138,7 @@ class Interface:
 
         if self.clear_display:
             self.current_art = False
-            self.canvas.clear()
+            print(self.term.clear)
             self.clear_display = False
 
         if track.title:
@@ -172,8 +148,8 @@ class Interface:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
             windowtitle = titlestr
-        display_str(fitted_text(titlestr), -2, caca.STYLE_BOLD)
-        self.display.set_title(windowtitle)
+        display_str(fitted_text(titlestr), -2, "bold")
+        self.set_title(windowtitle)
 
         if track.artist:
             display_str(fitted_text(track.artist), -1)
@@ -186,54 +162,67 @@ class Interface:
         if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
         if self.vis_shown:
-            self.display_vis(player.get_vis_frame())
+            display_ascii(player.get_vis_frame())
         else:
             if not self.current_art and track.cover_art:
-                self.display_cover_art(track.cover_art)
+                display_ascii(track.cover_art.get_image())
+                self.current_art = track.cover_art
 
         if self.help_shown:
             self.blit_help()
 
-        self.display.refresh()
+        sys.stdout.flush()
         return True
 
     def populate_help(self):
-        hc = Canvas(39, 18)
-        helptext = [
-            "?, h    : Show this help screen",
-            "Space   : Toggle play/pause",
-            "Left    : Seek backwards 10 seconds",
-            "Right   : Seek forwards 10 seconds",
-            "p, PgUp : Previous track",
-            "n, PgDn : Next track",
-            "m       : Toggle mute/unmute",
-            "v       : Toggle visualization",
-            "+, =    : Volume up",
-            "-, _    : Volume down",
-            "Esc     : Close help screen",
-            "q       : Quit",
+        hw = 37
+        helpentries = [
+            ("?, h    ", ": Show this help screen"),
+            ("Space   ", ": Toggle play/pause"),
+            ("Left    ", ": Seek backwards 10 seconds"),
+            ("Right   ", ": Seek forwards 10 seconds"),
+            ("p, PgUp ", ": Previous track"),
+            ("n, PgDn ", ": Next track"),
+            ("m       ", ": Toggle mute/unmute"),
+            ("v       ", ": Toggle visualization"),
+            ("+, =    ", ": Volume up"),
+            ("-, _    ", ": Volume down"),
+            ("Esc     ", ": Close help screen"),
+            ("q       ", ": Quit"),
         ]
 
-        helptitle = f"Tuatara {version}"
-        hc.draw_cp437_box(0, 0, hc.get_width(), hc.get_height())
+        def helpline(txt, centered=False):
+            length = self.term.length(txt)
+            offset1 = (hw - length) // 2 if centered else 1
+            offset2 = (hw - length - offset1) if centered else hw - length - 1
+            return "│" + " " * offset1 + txt + " " * offset2 + "│"
 
-        hc.put_str(int((39 - len(helptitle)) / 2), 2, helptitle)
+        helptext = []
 
-        for line in helptext:
-            hc.put_str(2, 4 + helptext.index(line), line)
-
-        hc.set_handle(hc.get_width() // 2, hc.get_height() // 2)
-        return hc
+        helptext.append("┌" + "─" * hw + "┐")
+        helptext.append(helpline(""))
+        helptext.append(helpline(self.term.bold(f"Tuatara {version}"), centered=True))
+        helptext.append(helpline(""))
+        for key, value in helpentries:
+            helptext.append(helpline(self.term.bold(key) + value))
+        helptext.append(helpline(""))
+        helptext.append("└" + "─" * hw + "┘")
+        return helptext
 
     def blit_help(self):
-        self.canvas.blit(
-            self.canvas.get_width() // 2,
-            self.canvas.get_height() // 2,
-            self.help_canvas,
-            NullCanvas(),
-        )
+        h = len(self.help_canvas)
+        w = self.term.length(self.help_canvas[0])
+        offset = (self.height - h) // 2
+        output = ""
+        for line in self.help_canvas:
+            output += self.term.move_xy((self.width - w) // 2, offset) + line
+            offset += 1
+        print(output)
 
     def toggle_vis(self):
+        if not self.vis_shown and self.term.number_of_colors != 1 << 24:
+            debug("Visualiazion not available when not on a truecolor terminal")
+            return
         self.vis_shown = not self.vis_shown
         self.clear_display = True
 
@@ -245,31 +234,25 @@ class Interface:
         self.clear_display = True
 
     def process_keys(self, fd, condition, player):
-        ev = Event()
-        while self.display.get_event(caca.EVENT_ANY, ev, 100):
-            if ev.get_type() != caca.EVENT_KEY_PRESS:
-                continue
-            key = ev.get_key_ch()
-            if key > 0x80 or key < 0x1F:
-                match key:
-                    case caca.KEY_ESCAPE:
+        while True:
+            key = self.term.inkey(timeout=0)
+            if not key:
+                break
+            if key.is_sequence:
+                match key.name:
+                    case "KEY_ESCAPE":
                         self.hide_help()
                         self.display_info(player)
-                    case caca.KEY_PAGEUP:
+                    case "KEY_PGUP":
                         player.prev()
-                    case caca.KEY_PAGEDOWN:
+                    case "KEY_PGDOWN":
                         player.next()
-                    case caca.KEY_LEFT:
+                    case "KEY_LEFT":
                         player.seek_reverse()
-                    case caca.KEY_RIGHT:
+                    case "KEY_RIGHT":
                         player.seek_forward()
-                    case caca.KEY_CTRL_C:
-                        self.stop()
-                        return False
-                    case _:
-                        pass
             else:
-                keychar = chr(key).lower()
+                keychar = key.lower()
                 match keychar:
                     case "q":
                         player.stop()
@@ -312,20 +295,18 @@ class Interface:
         self.mainloop.quit()
 
     def run(self, player):
-        self.mainloop = GLib.MainLoop()
-        GLib.unix_fd_add_full(
-            GLib.PRIORITY_DEFAULT,
-            sys.stdin.fileno(),
-            GLib.IO_IN,
-            self.process_keys,
-            player,
-        )
-        GLib.timeout_add(20, self.display_info, player)
-        self.mainloop.run()
+        with self.term.cbreak(), self.term.hidden_cursor(), self.term.fullscreen():
+            self.mainloop = GLib.MainLoop()
+            GLib.unix_fd_add_full(
+                GLib.PRIORITY_DEFAULT,
+                sys.stdin.fileno(),
+                GLib.IO_IN,
+                self.process_keys,
+                player,
+            )
+            GLib.timeout_add(20, self.display_info, player)
+            self.mainloop.run()
 
     def stop(self, exit=True):
-        self.canvas.clear()
-        self.display.refresh()
-        self.display = None  # reset terminal
         if exit:
             self.mainloop.quit()

@@ -46,8 +46,6 @@ def test_validation(capsys):
     bad_data = {
         "fetchers": 3,
         "font_ratio": -1,
-        "dither": True,
-        "charset": 32,
         "brightness_adj": 10,
         "contrast_adj": True,
         "visualization": 3.14159,
@@ -55,8 +53,6 @@ def test_validation(capsys):
     error_msgs = (
         "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n",
         "Error: 'font_ratio' must be a positive number\n",
-        "Error: 'dither' must be a string\n",
-        "Error: 'charset' must be a string\n",
         "Error: 'brightness_adj' must be between 0 and 2\n",
         "Error: 'contrast_adj' must be between 0 and 2\n",
         "Error: 'visualization' must be a string\n",
@@ -76,8 +72,6 @@ def test_override():
     good_data = {
         "fetchers": ["apple"],
         "font_ratio": 3.14159,
-        "dither": "random",
-        "charset": "blocks",
         "brightness_adj": 1.0,
         "contrast_adj": 1.99,
         "visualization": "goom",
@@ -96,7 +90,7 @@ debug = true
 debugfile = "tt.log"
 
 [art]
-dither = "random"
+brightness_adj = 1.1
 """
     conf_file = os.path.join(tmp_path, "test.toml")
     with open(conf_file, "w") as f:
@@ -106,7 +100,7 @@ dither = "random"
 
     assert defaults._settings.get("debug") is True
     assert defaults._settings.get("debugfile") == "tt.log"
-    assert defaults._settings.get("art").get("dither") == "random"
+    assert defaults._settings.get("art").get("brightness_adj") == 1.1
 
 
 def test_load_bad_file(tmp_path):
@@ -128,7 +122,7 @@ def test_load_bad_settings(tmp_path):
 
     newfile = """
 [art]
-dither = true
+brightness_adj = true
 """
     conf_file = os.path.join(tmp_path, "test.toml")
     with open(conf_file, "w") as f:
