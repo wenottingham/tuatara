@@ -35,7 +35,7 @@ class Interface:
         signal.signal(signal.SIGINT, self.stop)
 
     def set_title(self, title):
-        print("\x1B]0;" + title + "\x07")
+        print("\x1b]0;" + title + "\x07")
 
     def set_size(self, signum=None, stack=None):
         self.width = self.term.width
