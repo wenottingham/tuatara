@@ -3,6 +3,7 @@ Notes on future work
 
 # Possible items
 - Subsonic/navidrome/plex streaming support
+- Automatic background color setting
 - Actually testing non-Linux platforms
 
 # Unlikely items

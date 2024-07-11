@@ -9,11 +9,7 @@ debugfile = 'tuatara.log'
 fetchers = ['apple', 'musicbrainz']
 # Ratio of terminal font height to width
 font_ratio = 2.0
-# libcaca dithering algorithm
-dither = 'fstein'
-# libcaca charset
-charset = 'ascii'
-# Pre-caca art image adjustments
+# Pre-ascii-ify art image adjustments
 brightness_adj = 0.75
 contrast_adj = 1.25
 # Visualization plugin. Set to 'none' to disable visualization.

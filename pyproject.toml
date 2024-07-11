@@ -5,7 +5,7 @@ description = "Tuatara is a text-mode music player."
 authors = ["Bill Nottingham <notting@splat.cc>"]
 license = "GPL-3.0+"
 readme = "README.md"
-packages = [ { include = "caca" }, { include = "tuatara" } ]
+packages = [ { include = "tuatara" } ]
 include = ["sample-tuatara.toml"]
 
 [tool.poetry.dependencies]
@@ -22,9 +22,6 @@ pex = "^2.3.1"
 
 [tool.poetry.scripts]
 tuatara = 'tuatara.main:main'
-
-[tool.ruff]
-exclude = ["caca"]
 
 [build-system]
 requires = ["poetry-core"]
