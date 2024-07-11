@@ -11,7 +11,7 @@ import tomllib
 
 from datetime import datetime
 
-version = "0.3.2"
+version = "0.4.0"
 
 
 class Settings:
