@@ -122,6 +122,9 @@ class Interface:
         def display_ascii(image):
             CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
 
+            if not image:
+                return
+
             output = ""
             img = image.resize((self.art_box.width, self.art_box.height))
 
