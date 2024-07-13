@@ -197,7 +197,8 @@ class Player:
     def stop(self, error=None):
         self.player.set_state(Gst.State.NULL)
         self.status = "finished"
-        self.error = error
+        if error:
+            self.error = error
 
     def parse_tags(self, taglist, tagtype):
         match tagtype:
