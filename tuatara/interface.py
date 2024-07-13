@@ -178,7 +178,7 @@ class Interface:
             sys.stdout.flush()
             return True
 
-        if status == "not_ready":
+        if status == "not ready":
             return True
 
         if self.clear_display:
