@@ -19,6 +19,46 @@ from gi.repository import GLib
 from tuatara.settings import settings, debug, version
 
 
+class Window:
+    def __init__(self):
+        self._width = None
+        self._height = None
+        self._x = None
+        self._y = None
+
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, width):
+        self._width = width
+
+    @property
+    def height(self):
+        return self._height
+
+    @height.setter
+    def height(self, height):
+        self._height = height
+
+    @property
+    def left(self):
+        return self._left
+
+    @left.setter
+    def left(self, left):
+        self._left = left
+
+    @property
+    def top(self):
+        return self._top
+
+    @top.setter
+    def top(self, top):
+        self._top = top
+
+
 class Interface:
     def __init__(self):
         self.term = blessed.Terminal()
@@ -41,55 +81,55 @@ class Interface:
         self.need_resize = True
 
     def set_size(self):
-        self.width = self.term.width
-        self.height = self.term.height
-        if self.width > self.height * settings.art.get("font_ratio"):
-            self.horizontal = True
-            self.window_width = self.width - int(
-                settings.art.get("font_ratio") * self.height
+        text_box = Window()
+        art_box = Window()
+
+        ratio = settings.art.get("font_ratio")
+        if self.term.width > self.term.height * ratio:
+            text_box.width = max(
+                self.term.width - int(ratio * self.term.height),
+                36,
             )
-            self.window_height = self.height
-            if self.window_width < 36:
-                self.window_width = 36
-            self.width_offset = self.width - self.window_width
-            self.height_offset = 0
+            text_box.height = self.term.height
+            text_box.left = self.term.width - text_box.width
+            text_box.top = 0
+
+            art_box.width = self.term.width - text_box.width - 2
+            art_box.height = min(
+                int(art_box.width // ratio),
+                self.term.height - 2,
+            )
+            art_box.left = 1
+            art_box.top = (self.term.height - art_box.height) // 2
         else:
-            self.horizontal = False
-            self.window_width = self.width
-            self.window_height = self.height - int(
-                self.width // settings.art.get("font_ratio")
+            text_box.width = self.term.width
+            text_box.height = max(
+                self.term.height - int(self.term.width // ratio),
+                7,
             )
-            if self.window_height < 7:
-                self.window_height = 7
-            self.height_offset = self.height - self.window_height
-            self.width_offset = 0
+            text_box.top = self.term.height - text_box.height
+            text_box.left = 0
+
+            art_box.height = self.term.height - text_box.height - 2
+            art_box.width = int(art_box.height * ratio)
+            art_box.top = 1
+            art_box.left = (self.term.width - art_box.width) // 2
+        self.art_box = art_box
+        self.text_box = text_box
         self.clear_display = True
 
     def display_info(self, player):
         def display_ascii(image):
-            if self.horizontal:
-                width = self.width - self.window_width - 2
-                height = min(
-                    int(width // settings.art.get("font_ratio")),
-                    self.height - 2,
-                )
-                offsetx = 1
-                offsety = (self.height - height) // 2
-            else:
-                height = self.height - self.window_height - 2
-                width = int(height * settings.art.get("font_ratio"))
-                offsety = 1
-                offsetx = (self.width - width) // 2
             CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
 
             output = ""
-            img = image.resize((width, height))
+            img = image.resize((self.art_box.width, self.art_box.height))
 
             grayscale_img = img.convert("L")
 
-            for h in range(height):
-                output += self.term.move_xy(offsetx, h + offsety)
-                for w in range(width):
+            for h in range(self.art_box.height):
+                output += self.term.move_xy(self.art_box.left, self.art_box.top + h)
+                for w in range(self.art_box.width):
                     brightness = grayscale_img.getpixel((w, h)) / 255
                     r, g, b = img.getpixel((w, h))[:3]
                     ascii_char = CHAR_RAMP[int(brightness * (len(CHAR_RAMP) - 1))]
@@ -101,21 +141,17 @@ class Interface:
 
         def display_str(text, offset):
             def fitted(text):
-                if self.term.length(text) <= (self.window_width - 2):
+                if self.term.length(text) <= (self.text_box.width - 2):
                     return text
                 else:
-                    return self.term.truncate(text, self.window_width - 3) + "…"
+                    return self.term.truncate(text, self.text_box.width - 3) + "…"
 
             text = fitted(text)
             output = self.term.move_xy(
-                self.width_offset, self.height_offset + self.window_height // 2 + offset
+                self.text_box.left,
+                self.text_box.top + self.text_box.height // 2 + offset,
             )
-            output += self.term.clear_eol
-            output += self.term.move_xy(
-                self.width_offset + (self.window_width - self.term.length(text)) // 2,
-                self.height_offset + self.window_height // 2 + offset,
-            )
-            output += text
+            output += self.term.center(text, self.text_box.width)
             sys.stdout.write(output)
 
         if self.need_resize:
@@ -218,10 +254,10 @@ class Interface:
     def blit_help(self):
         h = len(self.help_canvas)
         w = self.term.length(self.help_canvas[0])
-        offset = (self.height - h) // 2
+        offset = (self.term.height - h) // 2
         output = ""
         for line in self.help_canvas:
-            output += self.term.move_xy((self.width - w) // 2, offset) + line
+            output += self.term.move_xy((self.term.width - w) // 2, offset) + line
             offset += 1
         sys.stdout.write(output)
 
