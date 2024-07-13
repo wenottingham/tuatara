@@ -158,7 +158,13 @@ class Player:
         return image_from_pixbuf(self.pixbuf_sink.get_property("last-pixbuf"))
 
     def get_status(self):
-        return self.status
+        if self.status == "finished":
+            return "finished"
+        (set, track_pos) = self.player.query_position(Gst.Format.TIME)
+        if self.current_track.title or track_pos > (Gst.SECOND / 5):
+            return "ready"
+        else:
+            return "not ready"
 
     def get_status_str(self):
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
@@ -178,11 +184,6 @@ class Player:
         else:
             len_str = "-"
 
-        if self.current_track.title or track_pos > (Gst.SECOND / 5):
-            ready = True
-        else:
-            ready = False
-
         status_str = f"{pos_str} / {len_str}"
 
         if self.status == "paused":
@@ -191,11 +192,11 @@ class Player:
         if self.player.get_property("mute"):
             status_str = f"{status_str} [MUTED]"
 
-        return (ready, status_str)
+        return status_str
 
     def stop(self, error=None):
         self.player.set_state(Gst.State.NULL)
-        self.status = "done"
+        self.status = "finished"
         self.error = error
 
     def parse_tags(self, taglist, tagtype):

@@ -124,7 +124,8 @@ class Interface:
             self.set_size()
             self.need_resize = False
 
-        if player.get_status() == "done":
+        status = player.get_status()
+        if status == "finished":
             self.stop()
             return False
 
@@ -138,8 +139,7 @@ class Interface:
             print(self.term.clear())
             return True
 
-        (ready, status_str) = player.get_status_str()
-        if not ready:
+        if status == "not_ready":
             return True
 
         if self.clear_display:
@@ -163,7 +163,7 @@ class Interface:
         if track.album:
             display_str(fitted_text(track.album), 0)
 
-        display_str(status_str, 2)
+        display_str(player.get_status_str(), 2)
 
         if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
