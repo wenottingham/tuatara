@@ -99,23 +99,20 @@ class Interface:
 
             sys.stdout.write(output)
 
-        def fitted_text(text):
-            if len(text) > (self.window_width - 2):
-                trunc_text = text[: self.window_width - 3]
-                return f"{trunc_text}…"
-            else:
-                return text
-
-        def centered_position(text):
-            return self.width_offset + (self.window_width - self.term.length(text)) // 2
-
         def display_str(text, offset):
+            def fitted(text):
+                if self.term.length(text) <= (self.window_width - 2):
+                    return text
+                else:
+                    return self.term.truncate(text, self.window_width - 3) + "…"
+
+            text = fitted(text)
             output = self.term.move_xy(
                 self.width_offset, self.height_offset + self.window_height // 2 + offset
             )
             output += self.term.clear_eol
             output += self.term.move_xy(
-                centered_position(text),
+                self.width_offset + (self.window_width - self.term.length(text)) // 2,
                 self.height_offset + self.window_height // 2 + offset,
             )
             output += text
@@ -151,20 +148,20 @@ class Interface:
             self.clear_display = False
 
         if track.title:
-            titlestr = fitted_text(track.title)
+            titlestr = track.title
             windowtitle = f"{track.artist} - {track.title}"
         else:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
             windowtitle = titlestr
-        display_str(self.term.bold(fitted_text(titlestr)), -2)
+        display_str(self.term.bold(titlestr), -2)
         self.set_title(windowtitle)
 
         if track.artist:
-            display_str(fitted_text(track.artist), -1)
+            display_str(track.artist, -1)
 
         if track.album:
-            display_str(fitted_text(track.album), 0)
+            display_str(track.album, 0)
 
         display_str(player.get_status_str(), 2)
 
