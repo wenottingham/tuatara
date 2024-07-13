@@ -62,6 +62,17 @@ class Window:
 class Interface:
     def __init__(self):
         self.term = blessed.Terminal()
+        if self.term.number_of_colors != 1 << 24:
+            art = {}
+            if settings.art.get("visualization") != "none":
+                debug("Visualiazion unavailable due to non-truecolor terminal")
+                art["visualization"] = "none"
+            if settings.art.get("dynamic_background"):
+                debug(
+                    "Dynamic background color unavailable due to non-truecolor terminal"
+                )
+                art["dynamic_background"] = False
+            settings.merge_art(art)
         self.set_title(f"Tutatara {version}")
         self.help_canvas = self.populate_help()
         self.art_shown = None
@@ -289,9 +300,6 @@ class Interface:
         sys.stdout.write(output)
 
     def toggle_vis(self):
-        if not self.vis_shown and self.term.number_of_colors != 1 << 24:
-            debug("Visualiazion not available when not on a truecolor terminal")
-            return
         self.vis_shown = not self.vis_shown
         self.clear_display = True
 

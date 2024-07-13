@@ -45,6 +45,7 @@ def test_validation(capsys):
 
     bad_data = {
         "fetchers": 3,
+        "dynamic_background": "yo",
         "font_ratio": -1,
         "brightness_adj": 10,
         "contrast_adj": True,
@@ -52,6 +53,7 @@ def test_validation(capsys):
     }
     error_msgs = (
         "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n",
+        "Error: 'dynamic_background' must be true or false\n",
         "Error: 'font_ratio' must be a positive number\n",
         "Error: 'brightness_adj' must be between 0 and 2\n",
         "Error: 'contrast_adj' must be between 0 and 2\n",
