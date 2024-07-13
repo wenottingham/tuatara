@@ -5,12 +5,13 @@
 # SPDX-License-Identifier: GPL-3.0+
 #
 
-from tuatara.image_utils import image_from_file, image_from_buffer
+from tuatara.image_utils import image_from_file, image_from_buffer, dominant_color
 
 
 class CoverArt:
     def __init__(self):
         self.imgdata = None
+        self.bg_color = None
         pass
 
     def get_image(self):
@@ -31,6 +32,7 @@ class FileCoverArt(CoverArt):
 
     def get_image(self):
         self.imgdata = image_from_file(self.path)
+        self.bg_color = dominant_color(self.imgdata)
         return self.imgdata
 
 
@@ -44,6 +46,7 @@ class InlineCoverArt(CoverArt):
 
     def set_from_buffer(self, buffer):
         self.imgdata = image_from_buffer(buffer)
+        self.bg_color = dominant_color(self.imgdata)
 
     def get_image(self):
         return self.imgdata

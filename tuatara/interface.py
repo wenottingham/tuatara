@@ -71,6 +71,7 @@ class Interface:
         self.mainloop = None
         self.need_resize = True
         self.error = None
+        self.bg_color = None
         signal.signal(signal.SIGWINCH, self.sigwinch_handler)
         signal.signal(signal.SIGINT, self.stop)
 
@@ -118,6 +119,13 @@ class Interface:
         self.text_box = text_box
         self.clear_display = True
 
+    def bold_with_bg(self, text):
+        text = self.term.bold(text)
+        if self.bg_color:
+            (r, g, b) = self.bg_color
+            text += self.term.on_color_rgb(r, g, b)
+        return text
+
     def display_info(self, player):
         def display_ascii(image):
             CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
@@ -126,6 +134,9 @@ class Interface:
                 return
 
             output = ""
+            if self.bg_color:
+                (r, g, b) = self.bg_color
+                output += self.term.on_color_rgb(r, g, b) + self.term.clear
             img = image.resize((self.art_box.width, self.art_box.height))
 
             grayscale_img = img.convert("L")
@@ -154,6 +165,10 @@ class Interface:
                 self.text_box.left,
                 self.text_box.top + self.text_box.height // 2 + offset,
             )
+            if self.bg_color:
+                (r, g, b) = self.bg_color
+                output += self.term.on_color_rgb(r, g, b)
+                text += self.term.on_color_rgb(r, g, b)
             output += self.term.center(text, self.text_box.width)
             sys.stdout.write(output)
 
@@ -171,10 +186,11 @@ class Interface:
         if track != self.current_track:
             self.clear_display = True
             self.art_shown = False
+            self.bg_color = None
         self.current_track = track
 
         if not track:
-            sys.stdout.write(self.term.clear)
+            sys.stdout.write(self.term.normal + self.term.clear)
             sys.stdout.flush()
             return True
 
@@ -183,7 +199,7 @@ class Interface:
 
         if self.clear_display:
             self.art_shown = False
-            sys.stdout.write(self.term.clear)
+            sys.stdout.write(self.term.normal + self.term.clear)
             self.clear_display = False
 
         if track.title:
@@ -193,7 +209,7 @@ class Interface:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
             windowtitle = titlestr
-        display_str(self.term.bold(titlestr), -2)
+        display_str(self.bold_with_bg(titlestr), -2)
         self.set_title(windowtitle)
 
         if track.artist:
@@ -207,10 +223,13 @@ class Interface:
         if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
         if self.vis_shown:
+            self.colorstr = ""
             display_ascii(player.get_vis_frame())
         else:
             if not self.art_shown and track.cover_art:
-                display_ascii(track.cover_art.get_image())
+                img = track.cover_art.get_image()
+                self.bg_color = track.cover_art.bg_color
+                display_ascii(img)
                 self.art_shown = True
 
         if self.help_shown:
@@ -242,11 +261,14 @@ class Interface:
 
         helptext = []
 
-        helptext.append("┌" + "─" * (help_width + 2) + "┐")
+        helptext.append(self.term.normal + "┌" + "─" * (help_width + 2) + "┐")
         helptext.append(help_entry(""))
         helptext.append(
             help_entry(
-                self.term.center(self.term.bold(f"Tuatara {version}"), help_width)
+                self.term.center(
+                    self.term.bold(f"Tuatara {version}"),
+                    help_width,
+                )
             )
         )
         helptext.append(help_entry(""))
