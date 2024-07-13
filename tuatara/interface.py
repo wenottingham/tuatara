@@ -267,10 +267,7 @@ class Interface:
                         self.stop()
                         return False
                     case " ":
-                        if player.status == "playing":
-                            player.pause()
-                        else:
-                            player.play()
+                        player.play_pause()
                     case "n":
                         player.next()
                     case "p":
