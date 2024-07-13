@@ -34,7 +34,7 @@ class Interface:
         signal.signal(signal.SIGINT, self.stop)
 
     def set_title(self, title):
-        print("\x1b]0;" + title + "\x07")
+        sys.stdout.write("\x1b]0;" + title + "\x07")
 
     def sigwinch_handler(self, signum=None, stack=None):
         self.need_resize = True
@@ -93,7 +93,7 @@ class Interface:
                     output += self.term.on_color_rgb(r, g, b) + ascii_char
                 output += self.term.normal
 
-            print(output)
+            sys.stdout.write(output)
 
         def fitted_text(text):
             if len(text) > (self.window_width - 2):
@@ -118,7 +118,7 @@ class Interface:
                 output += self.term.bold(text)
             else:
                 output += text
-            print(output, end="")
+            sys.stdout.write(output)
 
         if self.need_resize:
             self.set_size()
@@ -136,7 +136,8 @@ class Interface:
         self.last_track = track
 
         if not track:
-            print(self.term.clear())
+            sys.stdout.write(self.term.clear)
+            sys.stdout.flush()
             return True
 
         if status == "not_ready":
@@ -144,7 +145,7 @@ class Interface:
 
         if self.clear_display:
             self.current_art = False
-            print(self.term.clear)
+            sys.stdout.write(self.term.clear)
             self.clear_display = False
 
         if track.title:
@@ -223,7 +224,7 @@ class Interface:
         for line in self.help_canvas:
             output += self.term.move_xy((self.width - w) // 2, offset) + line
             offset += 1
-        print(output)
+        sys.stdout.write(output)
 
     def toggle_vis(self):
         if not self.vis_shown and self.term.number_of_colors != 1 << 24:
