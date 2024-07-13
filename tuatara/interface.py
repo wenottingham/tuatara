@@ -23,11 +23,11 @@ class Interface:
     def __init__(self):
         self.term = blessed.Terminal()
         self.set_title(f"Tutatara {version}")
-        self.current_art = None
         self.help_canvas = self.populate_help()
+        self.art_shown = None
         self.help_shown = False
         self.vis_shown = False
-        self.last_track = None
+        self.current_track = None
         self.mainloop = None
         self.need_resize = True
         self.error = None
@@ -132,9 +132,10 @@ class Interface:
 
         track = player.get_current_track()
 
-        if track != self.last_track:
+        if track != self.current_track:
             self.clear_display = True
-        self.last_track = track
+            self.art_shown = False
+        self.current_track = track
 
         if not track:
             sys.stdout.write(self.term.clear)
@@ -145,7 +146,7 @@ class Interface:
             return True
 
         if self.clear_display:
-            self.current_art = False
+            self.art_shown = False
             sys.stdout.write(self.term.clear)
             self.clear_display = False
 
@@ -172,9 +173,9 @@ class Interface:
         if self.vis_shown:
             display_ascii(player.get_vis_frame())
         else:
-            if not self.current_art and track.cover_art:
+            if not self.art_shown and track.cover_art:
                 display_ascii(track.cover_art.get_image())
-                self.current_art = track.cover_art
+                self.art_shown = True
 
         if self.help_shown:
             self.blit_help()
