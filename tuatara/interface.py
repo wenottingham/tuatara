@@ -30,6 +30,7 @@ class Interface:
         self.last_track = None
         self.mainloop = None
         self.need_resize = True
+        self.error = None
         signal.signal(signal.SIGWINCH, self.sigwinch_handler)
         signal.signal(signal.SIGINT, self.stop)
 
@@ -262,7 +263,6 @@ class Interface:
                 keychar = key.lower()
                 match keychar:
                     case "q":
-                        player.stop()
                         self.stop()
                         return False
                     case " ":
@@ -297,9 +297,8 @@ class Interface:
         if settings.debug:
             traceback.print_exception(ex_type, ex_value, tb, None, settings._debugobj)
             settings._debugobj.flush()
-        self.stop(exit=False)
-        traceback.print_exception(ex_type, ex_value, tb)
-        self.mainloop.quit()
+        self.error = "Unexpected error, check debug logs for details."
+        self.stop()
 
     def run(self, player):
         with self.term.cbreak(), self.term.hidden_cursor(), self.term.fullscreen():
@@ -313,7 +312,7 @@ class Interface:
             )
             GLib.timeout_add(20, self.display_info, player)
             self.mainloop.run()
+        player.stop(self.error)
 
-    def stop(self, exit=True):
-        if exit:
-            self.mainloop.quit()
+    def stop(self, signum=None, stack=None):
+        self.mainloop.quit()
