@@ -103,9 +103,9 @@ class Interface:
                 return text
 
         def centered_position(text):
-            return self.width_offset + (self.window_width - len(text)) // 2
+            return self.width_offset + (self.window_width - self.term.length(text)) // 2
 
-        def display_str(text, offset, attr=None):
+        def display_str(text, offset):
             output = self.term.move_xy(
                 self.width_offset, self.height_offset + self.window_height // 2 + offset
             )
@@ -114,10 +114,7 @@ class Interface:
                 centered_position(text),
                 self.height_offset + self.window_height // 2 + offset,
             )
-            if attr == "bold":
-                output += self.term.bold(text)
-            else:
-                output += text
+            output += text
             sys.stdout.write(output)
 
         if self.need_resize:
@@ -155,7 +152,7 @@ class Interface:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
             windowtitle = titlestr
-        display_str(fitted_text(titlestr), -2, "bold")
+        display_str(self.term.bold(fitted_text(titlestr)), -2)
         self.set_title(windowtitle)
 
         if track.artist:
