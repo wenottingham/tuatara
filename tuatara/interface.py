@@ -19,15 +19,55 @@ from gi.repository import GLib
 from tuatara.settings import settings, debug, version
 
 
+class Window:
+    def __init__(self):
+        self._width = None
+        self._height = None
+        self._x = None
+        self._y = None
+
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, width):
+        self._width = width
+
+    @property
+    def height(self):
+        return self._height
+
+    @height.setter
+    def height(self, height):
+        self._height = height
+
+    @property
+    def left(self):
+        return self._left
+
+    @left.setter
+    def left(self, left):
+        self._left = left
+
+    @property
+    def top(self):
+        return self._top
+
+    @top.setter
+    def top(self, top):
+        self._top = top
+
+
 class Interface:
     def __init__(self):
         self.term = blessed.Terminal()
         self.set_title(f"Tutatara {version}")
-        self.current_art = None
         self.help_canvas = self.populate_help()
+        self.art_shown = None
         self.help_shown = False
         self.vis_shown = False
-        self.last_track = None
+        self.current_track = None
         self.mainloop = None
         self.need_resize = True
         self.error = None
@@ -41,55 +81,55 @@ class Interface:
         self.need_resize = True
 
     def set_size(self):
-        self.width = self.term.width
-        self.height = self.term.height
-        if self.width > self.height * settings.art.get("font_ratio"):
-            self.horizontal = True
-            self.window_width = self.width - int(
-                settings.art.get("font_ratio") * self.height
+        text_box = Window()
+        art_box = Window()
+
+        ratio = settings.art.get("font_ratio")
+        if self.term.width > self.term.height * ratio:
+            text_box.width = max(
+                self.term.width - int(ratio * self.term.height),
+                36,
             )
-            self.window_height = self.height
-            if self.window_width < 36:
-                self.window_width = 36
-            self.width_offset = self.width - self.window_width
-            self.height_offset = 0
+            text_box.height = self.term.height
+            text_box.left = self.term.width - text_box.width
+            text_box.top = 0
+
+            art_box.width = self.term.width - text_box.width - 2
+            art_box.height = min(
+                int(art_box.width // ratio),
+                self.term.height - 2,
+            )
+            art_box.left = 1
+            art_box.top = (self.term.height - art_box.height) // 2
         else:
-            self.horizontal = False
-            self.window_width = self.width
-            self.window_height = self.height - int(
-                self.width // settings.art.get("font_ratio")
+            text_box.width = self.term.width
+            text_box.height = max(
+                self.term.height - int(self.term.width // ratio),
+                7,
             )
-            if self.window_height < 7:
-                self.window_height = 7
-            self.height_offset = self.height - self.window_height
-            self.width_offset = 0
+            text_box.top = self.term.height - text_box.height
+            text_box.left = 0
+
+            art_box.height = self.term.height - text_box.height - 2
+            art_box.width = int(art_box.height * ratio)
+            art_box.top = 1
+            art_box.left = (self.term.width - art_box.width) // 2
+        self.art_box = art_box
+        self.text_box = text_box
         self.clear_display = True
 
     def display_info(self, player):
         def display_ascii(image):
-            if self.horizontal:
-                width = self.width - self.window_width - 2
-                height = min(
-                    int(width // settings.art.get("font_ratio")),
-                    self.height - 2,
-                )
-                offsetx = 1
-                offsety = (self.height - height) // 2
-            else:
-                height = self.height - self.window_height - 2
-                width = int(height * settings.art.get("font_ratio"))
-                offsety = 1
-                offsetx = (self.width - width) // 2
             CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
 
             output = ""
-            img = image.resize((width, height))
+            img = image.resize((self.art_box.width, self.art_box.height))
 
             grayscale_img = img.convert("L")
 
-            for h in range(height):
-                output += self.term.move_xy(offsetx, h + offsety)
-                for w in range(width):
+            for h in range(self.art_box.height):
+                output += self.term.move_xy(self.art_box.left, self.art_box.top + h)
+                for w in range(self.art_box.width):
                     brightness = grayscale_img.getpixel((w, h)) / 255
                     r, g, b = img.getpixel((w, h))[:3]
                     ascii_char = CHAR_RAMP[int(brightness * (len(CHAR_RAMP) - 1))]
@@ -99,26 +139,19 @@ class Interface:
 
             sys.stdout.write(output)
 
-        def fitted_text(text):
-            if len(text) > (self.window_width - 2):
-                trunc_text = text[: self.window_width - 3]
-                return f"{trunc_text}…"
-            else:
-                return text
-
-        def centered_position(text):
-            return self.width_offset + (self.window_width - self.term.length(text)) // 2
-
         def display_str(text, offset):
+            def fitted(text):
+                if self.term.length(text) <= (self.text_box.width - 2):
+                    return text
+                else:
+                    return self.term.truncate(text, self.text_box.width - 3) + "…"
+
+            text = fitted(text)
             output = self.term.move_xy(
-                self.width_offset, self.height_offset + self.window_height // 2 + offset
+                self.text_box.left,
+                self.text_box.top + self.text_box.height // 2 + offset,
             )
-            output += self.term.clear_eol
-            output += self.term.move_xy(
-                centered_position(text),
-                self.height_offset + self.window_height // 2 + offset,
-            )
-            output += text
+            output += self.term.center(text, self.text_box.width)
             sys.stdout.write(output)
 
         if self.need_resize:
@@ -132,9 +165,10 @@ class Interface:
 
         track = player.get_current_track()
 
-        if track != self.last_track:
+        if track != self.current_track:
             self.clear_display = True
-        self.last_track = track
+            self.art_shown = False
+        self.current_track = track
 
         if not track:
             sys.stdout.write(self.term.clear)
@@ -145,25 +179,25 @@ class Interface:
             return True
 
         if self.clear_display:
-            self.current_art = False
+            self.art_shown = False
             sys.stdout.write(self.term.clear)
             self.clear_display = False
 
         if track.title:
-            titlestr = fitted_text(track.title)
+            titlestr = track.title
             windowtitle = f"{track.artist} - {track.title}"
         else:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
             windowtitle = titlestr
-        display_str(self.term.bold(fitted_text(titlestr)), -2)
+        display_str(self.term.bold(titlestr), -2)
         self.set_title(windowtitle)
 
         if track.artist:
-            display_str(fitted_text(track.artist), -1)
+            display_str(track.artist, -1)
 
         if track.album:
-            display_str(fitted_text(track.album), 0)
+            display_str(track.album, 0)
 
         display_str(player.get_status_str(), 2)
 
@@ -172,19 +206,18 @@ class Interface:
         if self.vis_shown:
             display_ascii(player.get_vis_frame())
         else:
-            if not self.current_art and track.cover_art:
+            if not self.art_shown and track.cover_art:
                 display_ascii(track.cover_art.get_image())
-                self.current_art = track.cover_art
+                self.art_shown = True
 
         if self.help_shown:
-            self.blit_help()
+            self.display_help()
 
         sys.stdout.flush()
         return True
 
     def populate_help(self):
-        hw = 37
-        helpentries = [
+        help_entries = [
             ("?, h    ", ": Show this help screen"),
             ("Space   ", ": Toggle play/pause"),
             ("Left    ", ": Seek backwards 10 seconds"),
@@ -198,33 +231,36 @@ class Interface:
             ("Esc     ", ": Close help screen"),
             ("q       ", ": Quit"),
         ]
+        help_width = max(map(lambda x: len(x[0]) + len(x[1]), help_entries))
 
-        def helpline(txt, centered=False):
-            length = self.term.length(txt)
-            offset1 = (hw - length) // 2 if centered else 1
-            offset2 = (hw - length - offset1) if centered else hw - length - 1
-            return "│" + " " * offset1 + txt + " " * offset2 + "│"
+        def help_entry(txt):
+            txt = self.term.ljust(txt, help_width)
+            return "│ " + txt + " │"
 
         helptext = []
 
-        helptext.append("┌" + "─" * hw + "┐")
-        helptext.append(helpline(""))
-        helptext.append(helpline(self.term.bold(f"Tuatara {version}"), centered=True))
-        helptext.append(helpline(""))
-        for key, value in helpentries:
-            helptext.append(helpline(self.term.bold(key) + value))
-        helptext.append(helpline(""))
-        helptext.append("└" + "─" * hw + "┘")
+        helptext.append("┌" + "─" * (help_width + 2) + "┐")
+        helptext.append(help_entry(""))
+        helptext.append(
+            help_entry(
+                self.term.center(self.term.bold(f"Tuatara {version}"), help_width)
+            )
+        )
+        helptext.append(help_entry(""))
+        for key, value in help_entries:
+            helptext.append(help_entry(self.term.bold(key) + value))
+        helptext.append(help_entry(""))
+        helptext.append("└" + "─" * (help_width + 2) + "┘")
         return helptext
 
-    def blit_help(self):
+    def display_help(self):
         h = len(self.help_canvas)
         w = self.term.length(self.help_canvas[0])
-        offset = (self.height - h) // 2
+        offset = (self.term.height - h) // 2
         output = ""
-        for line in self.help_canvas:
-            output += self.term.move_xy((self.width - w) // 2, offset) + line
-            offset += 1
+        for line in range(h):
+            output += self.term.move_xy((self.term.width - w) // 2, offset + line)
+            output += self.help_canvas[line]
         sys.stdout.write(output)
 
     def toggle_vis(self):
@@ -266,10 +302,7 @@ class Interface:
                         self.stop()
                         return False
                     case " ":
-                        if player.status == "playing":
-                            player.pause()
-                        else:
-                            player.play()
+                        player.play_pause()
                     case "n":
                         player.next()
                     case "p":

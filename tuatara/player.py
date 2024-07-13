@@ -38,8 +38,6 @@ class Player:
         bus = self.player.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.on_message)
-        self.status = "prep"
-        self.mainloop = None
         self.error = None
         self.current_track = None
 
@@ -60,11 +58,15 @@ class Player:
 
     def play(self):
         self.player.set_state(Gst.State.PLAYING)
-        self.status = "playing"
 
     def pause(self):
         self.player.set_state(Gst.State.PAUSED)
-        self.status = "paused"
+
+    def play_pause(self):
+        if self.player.current_state == Gst.State.PAUSED:
+            self.play()
+        else:
+            self.pause()
 
     def seek_forward(self):
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
@@ -108,15 +110,11 @@ class Player:
         flags |= GST_PLAY_FLAG_VIS
         self.player.set_property("flags", flags)
 
-    def clear_current_track(self):
-        self.current_track = None
-
     def get_current_track(self):
         return self.current_track
 
     def next(self):
         self.player.set_state(Gst.State.NULL)
-        self.clear_current_track()
         self.index += 1
         if self.index >= len(self.playlist):
             self.stop()
@@ -125,7 +123,6 @@ class Player:
 
     def prev(self):
         self.player.set_state(Gst.State.NULL)
-        self.clear_current_track()
         self.index -= 1
         if self.index < 0:
             self.index = 0
@@ -158,7 +155,7 @@ class Player:
         return image_from_pixbuf(self.pixbuf_sink.get_property("last-pixbuf"))
 
     def get_status(self):
-        if self.status == "finished":
+        if not self.current_track:
             return "finished"
         (set, track_pos) = self.player.query_position(Gst.Format.TIME)
         if self.current_track.title or track_pos > (Gst.SECOND / 5):
@@ -186,7 +183,7 @@ class Player:
 
         status_str = f"{pos_str} / {len_str}"
 
-        if self.status == "paused":
+        if self.player.current_state == Gst.State.PAUSED:
             status_str = f"{status_str} [PAUSED]"
 
         if self.player.get_property("mute"):
@@ -196,7 +193,7 @@ class Player:
 
     def stop(self, error=None):
         self.player.set_state(Gst.State.NULL)
-        self.status = "finished"
+        self.current_track = None
         if error:
             self.error = error
 
