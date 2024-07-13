@@ -68,12 +68,15 @@ class Interface:
         def display_ascii(image):
             if self.horizontal:
                 width = self.width - self.window_width - 2
-                height = int(width // settings.art.get("font_ratio")) - 2
+                height = min(
+                    int(width // settings.art.get("font_ratio")),
+                    self.height - 2,
+                )
                 offsetx = 1
                 offsety = (self.height - height) // 2
             else:
                 height = self.height - self.window_height - 2
-                width = int(height * settings.art.get("font_ratio")) - 2
+                width = int(height * settings.art.get("font_ratio"))
                 offsety = 1
                 offsetx = (self.width - width) // 2
             CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
