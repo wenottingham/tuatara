@@ -211,14 +211,13 @@ class Interface:
                 self.art_shown = True
 
         if self.help_shown:
-            self.blit_help()
+            self.display_help()
 
         sys.stdout.flush()
         return True
 
     def populate_help(self):
-        hw = 37
-        helpentries = [
+        help_entries = [
             ("?, h    ", ": Show this help screen"),
             ("Space   ", ": Toggle play/pause"),
             ("Left    ", ": Seek backwards 10 seconds"),
@@ -232,33 +231,36 @@ class Interface:
             ("Esc     ", ": Close help screen"),
             ("q       ", ": Quit"),
         ]
+        help_width = max(map(lambda x: len(x[0]) + len(x[1]), help_entries))
 
-        def helpline(txt, centered=False):
-            length = self.term.length(txt)
-            offset1 = (hw - length) // 2 if centered else 1
-            offset2 = (hw - length - offset1) if centered else hw - length - 1
-            return "│" + " " * offset1 + txt + " " * offset2 + "│"
+        def help_entry(txt):
+            txt = self.term.ljust(txt, help_width)
+            return "│ " + txt + " │"
 
         helptext = []
 
-        helptext.append("┌" + "─" * hw + "┐")
-        helptext.append(helpline(""))
-        helptext.append(helpline(self.term.bold(f"Tuatara {version}"), centered=True))
-        helptext.append(helpline(""))
-        for key, value in helpentries:
-            helptext.append(helpline(self.term.bold(key) + value))
-        helptext.append(helpline(""))
-        helptext.append("└" + "─" * hw + "┘")
+        helptext.append("┌" + "─" * (help_width + 2) + "┐")
+        helptext.append(help_entry(""))
+        helptext.append(
+            help_entry(
+                self.term.center(self.term.bold(f"Tuatara {version}"), help_width)
+            )
+        )
+        helptext.append(help_entry(""))
+        for key, value in help_entries:
+            helptext.append(help_entry(self.term.bold(key) + value))
+        helptext.append(help_entry(""))
+        helptext.append("└" + "─" * (help_width + 2) + "┘")
         return helptext
 
-    def blit_help(self):
+    def display_help(self):
         h = len(self.help_canvas)
         w = self.term.length(self.help_canvas[0])
         offset = (self.term.height - h) // 2
         output = ""
-        for line in self.help_canvas:
-            output += self.term.move_xy((self.term.width - w) // 2, offset) + line
-            offset += 1
+        for line in range(h):
+            output += self.term.move_xy((self.term.width - w) // 2, offset + line)
+            output += self.help_canvas[line]
         sys.stdout.write(output)
 
     def toggle_vis(self):
