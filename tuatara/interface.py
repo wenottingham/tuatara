@@ -23,21 +23,23 @@ class Interface:
     def __init__(self):
         self.term = blessed.Terminal()
         self.set_title(f"Tutatara {version}")
-        self.term.enter_fullscreen()
-        self.set_size()
         self.current_art = None
         self.help_canvas = self.populate_help()
         self.help_shown = False
         self.vis_shown = False
         self.last_track = None
         self.mainloop = None
-        signal.signal(signal.SIGWINCH, self.set_size)
+        self.need_resize = True
+        signal.signal(signal.SIGWINCH, self.sigwinch_handler)
         signal.signal(signal.SIGINT, self.stop)
 
     def set_title(self, title):
         print("\x1b]0;" + title + "\x07")
 
-    def set_size(self, signum=None, stack=None):
+    def sigwinch_handler(self, signum=None, stack=None):
+        self.need_resize = True
+
+    def set_size(self):
         self.width = self.term.width
         self.height = self.term.height
         if self.width > self.height * settings.art.get("font_ratio"):
@@ -117,6 +119,10 @@ class Interface:
             else:
                 output += text
             print(output, end="")
+
+        if self.need_resize:
+            self.set_size()
+            self.need_resize = False
 
         if player.get_status() == "done":
             self.stop()
