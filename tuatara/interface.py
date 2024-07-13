@@ -48,8 +48,8 @@ class Interface:
                 settings.art.get("font_ratio") * self.height
             )
             self.window_height = self.height
-            if self.window_width < 20:
-                self.window_width = 20
+            if self.window_width < 36:
+                self.window_width = 36
             self.width_offset = self.width - self.window_width
             self.height_offset = 0
         else:
