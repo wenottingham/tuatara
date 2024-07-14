@@ -19,9 +19,9 @@ def mockexit(parser, status=0, message=""):
     return status
 
 
-def test_help_in_readme(capsys, monkeypatch):
+def test_help_in_manual(capsys, monkeypatch):
     monkeypatch.setattr(ArgumentParser, "exit", mockexit)
-    with open("README.md", "r") as f:
+    with open("MANUAL.md", "r") as f:
         readme = f.read()
 
     setup_config(["-h", "dummy.flac"])
