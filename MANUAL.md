@@ -45,6 +45,20 @@ Full usage:
 ```
 usage: tuatara [-h] [-f FILE] [-s] [-d] [--debugfile DEBUGFILE] [--version]
                PATH [PATH ...]
+
+Text-mode music player
+
+positional arguments:
+  PATH                  What to play
+
+options:
+  -h, --help            show this help message and exit
+  -f FILE, --file FILE  Load configuration from file
+  -s, --shuffle         Shuffle content
+  -d, --debug           Log debugging information
+  --debugfile DEBUGFILE
+                        Debug log file name
+  --version             show program's version number and exit
 ```
 
 Options:
