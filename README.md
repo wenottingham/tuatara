@@ -15,34 +15,24 @@ an entire music library.
 - Shuffle mode
 - Basic playlist support via .m3u files
 - Integrated cover art display
+- Dynamic background color
 - Visualization support
 
 tuatara is not intended for interactive browsing of your library;
 tell it what to play, and it plays it.
 
-# Screenshot
+## Screenshot
 
 ![Screenshot](https://github.com/wenottingham/tuatara/raw/main/assets/screenshot.png)
 
 # Usage
 
+To start with tuatara, just pass a file, directory of music files, or a URL
+on the commandline.
+
+Example:
 ```
-usage: tuatara [-h] [-f FILE] [-s] [-d] [--debugfile DEBUGFILE] [--version]
-               PATH [PATH ...]
-
-Text-mode music player
-
-positional arguments:
-  PATH                  What to play
-
-options:
-  -h, --help            show this help message and exit
-  -f FILE, --file FILE  Load configuration from file
-  -s, --shuffle         Shuffle content
-  -d, --debug           Log debugging information
-  --debugfile DEBUGFILE
-                        Debug log file name
-  --version             show program's version number and exit
+tuatara /path/to/my/music/library /path/to/some/other/files
 ```
 
 You can pass multiple files or directories to play on the command line.
@@ -60,9 +50,13 @@ tuatara is controlled by the keyboard. Basic keys are:
 
 Controls are not case-sensitive.
 
-# Requirements
+For more comprehensive documentation on features, usage, controls, and
+configuration, see the [manual](https://github.com/wenottingham/tuatara/blob/main/MANUAL.md).
+
+# Requirements and installation
 
 System requirements:
+- Python >= 3.11
 - GStreamer (with appropriate plugins)
 - GObject-introspection
 
@@ -72,6 +66,11 @@ Python requirements:
 - urllib3
 - m3u8
 - blessed
+
+tuatara can be installed from the [Releases](https://github.com/wenottingham/tuatara/releases) page on GitHub.
+
+Download and install the .whl file with pip, or download and use the pex file
+for your system's python interpreter.
 
 tuatara is only tested on Linux. macOS or Windows may theoretically work.
 
@@ -85,7 +84,7 @@ When submitting changes:
 
 tuatara is licensed under the GPL, version 3.0 or later.
 
-Python ascii art implementation inspired and cribbed from
+Python ASCII art implementation inspired and cribbed from
 [ascii-wizard](https://pypi.org/project/ascii-wizard/) and
 [artem](https://docs.rs/artem/latest/artem/index.html).
 
