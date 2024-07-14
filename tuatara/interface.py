@@ -82,7 +82,7 @@ class Interface:
         self.mainloop = None
         self.need_resize = True
         self.error = None
-        self.bg_color = None
+        self.colorstr = ""
         signal.signal(signal.SIGWINCH, self.sigwinch_handler)
         signal.signal(signal.SIGINT, self.stop)
 
@@ -131,23 +131,19 @@ class Interface:
         self.clear_display = True
 
     def bold_with_bg(self, text):
-        text = self.term.bold(text)
-        if self.bg_color:
-            (r, g, b) = self.bg_color
-            text += self.term.on_color_rgb(r, g, b)
+        text = self.term.bold(text) + self.colorstr
         return text
 
     def display_info(self, player):
-        def display_ascii(image):
+        def display_ascii(image, clear=False):
             CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
 
             if not image:
                 return
 
-            output = ""
-            if self.bg_color:
-                (r, g, b) = self.bg_color
-                output += self.term.on_color_rgb(r, g, b) + self.term.clear
+            output = self.colorstr
+            if clear:
+                output += self.term.clear
             img = image.resize((self.art_box.width, self.art_box.height))
 
             grayscale_img = img.convert("L")
@@ -176,10 +172,8 @@ class Interface:
                 self.text_box.left,
                 self.text_box.top + self.text_box.height // 2 + offset,
             )
-            if self.bg_color:
-                (r, g, b) = self.bg_color
-                output += self.term.on_color_rgb(r, g, b)
-                text += self.term.on_color_rgb(r, g, b)
+            output += self.colorstr
+            text += self.colorstr
             output += self.term.center(text, self.text_box.width)
             sys.stdout.write(output)
 
@@ -197,7 +191,7 @@ class Interface:
         if track != self.current_track:
             self.clear_display = True
             self.art_shown = False
-            self.bg_color = None
+            self.colorstr = ""
         self.current_track = track
 
         if not track:
@@ -239,8 +233,13 @@ class Interface:
         else:
             if not self.art_shown and track.cover_art:
                 img = track.cover_art.get_image()
-                self.bg_color = track.cover_art.bg_color
-                display_ascii(img)
+                if track.cover_art.bg_color:
+                    (r, g, b) = track.cover_art.bg_color
+                    self.colorstr = self.term.on_color_rgb(r, g, b)
+                if track.cover_art.fg_color:
+                    (r, g, b) = track.cover_art.fg_color
+                    self.colorstr += self.term.color_rgb(r, g, b)
+                display_ascii(img, clear=True)
                 self.art_shown = True
 
         if self.help_shown:

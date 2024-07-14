@@ -72,3 +72,11 @@ def dominant_color(img):
     if not color:
         color = (0, 0, 0)
     return color
+
+
+def foreground_for(color):
+    g_img = Image.new("RGBA", (1, 1), color).convert("L")
+    if g_img.getpixel((0, 0)) > 127:
+        return (30, 30, 30)
+    else:
+        return (225, 225, 225)
