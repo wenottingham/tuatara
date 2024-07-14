@@ -1,7 +1,7 @@
 
-# Print debugging to stderr
+# Print debugging to a debug logfile
 debug = false
-# Debug file (default debugfile is timestamped)
+# Debug logfile (default debugfile is timestamped)
 debugfile = 'tuatara.log'
 
 [art]
