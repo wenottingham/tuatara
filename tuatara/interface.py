@@ -62,6 +62,17 @@ class Window:
 class Interface:
     def __init__(self):
         self.term = blessed.Terminal()
+        if self.term.number_of_colors != 1 << 24:
+            art = {}
+            if settings.art.get("visualization") != "none":
+                debug("Visualiazion unavailable due to non-truecolor terminal")
+                art["visualization"] = "none"
+            if settings.art.get("dynamic_background"):
+                debug(
+                    "Dynamic background color unavailable due to non-truecolor terminal"
+                )
+                art["dynamic_background"] = False
+            settings.merge_art(art)
         self.set_title(f"Tutatara {version}")
         self.help_canvas = self.populate_help()
         self.art_shown = None
@@ -71,6 +82,7 @@ class Interface:
         self.mainloop = None
         self.need_resize = True
         self.error = None
+        self.colorstr = ""
         signal.signal(signal.SIGWINCH, self.sigwinch_handler)
         signal.signal(signal.SIGINT, self.stop)
 
@@ -118,14 +130,20 @@ class Interface:
         self.text_box = text_box
         self.clear_display = True
 
+    def bold_with_bg(self, text):
+        text = self.term.bold(text) + self.colorstr
+        return text
+
     def display_info(self, player):
-        def display_ascii(image):
+        def display_ascii(image, clear=False):
             CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
 
             if not image:
                 return
 
-            output = ""
+            output = self.colorstr
+            if clear:
+                output += self.term.clear
             img = image.resize((self.art_box.width, self.art_box.height))
 
             grayscale_img = img.convert("L")
@@ -154,6 +172,8 @@ class Interface:
                 self.text_box.left,
                 self.text_box.top + self.text_box.height // 2 + offset,
             )
+            output += self.colorstr
+            text += self.colorstr
             output += self.term.center(text, self.text_box.width)
             sys.stdout.write(output)
 
@@ -171,10 +191,11 @@ class Interface:
         if track != self.current_track:
             self.clear_display = True
             self.art_shown = False
+            self.colorstr = ""
         self.current_track = track
 
         if not track:
-            sys.stdout.write(self.term.clear)
+            sys.stdout.write(self.term.normal + self.term.clear)
             sys.stdout.flush()
             return True
 
@@ -183,7 +204,7 @@ class Interface:
 
         if self.clear_display:
             self.art_shown = False
-            sys.stdout.write(self.term.clear)
+            sys.stdout.write(self.term.normal + self.term.clear)
             self.clear_display = False
 
         if track.title:
@@ -193,7 +214,7 @@ class Interface:
             parsed_url = parse_url(track.url)
             titlestr = os.path.basename(parsed_url.path)
             windowtitle = titlestr
-        display_str(self.term.bold(titlestr), -2)
+        display_str(self.bold_with_bg(titlestr), -2)
         self.set_title(windowtitle)
 
         if track.artist:
@@ -207,10 +228,18 @@ class Interface:
         if not track.cover_art and track.fetch_status == "not_started":
             track.find_cover_art()
         if self.vis_shown:
+            self.colorstr = ""
             display_ascii(player.get_vis_frame())
         else:
             if not self.art_shown and track.cover_art:
-                display_ascii(track.cover_art.get_image())
+                img = track.cover_art.get_image()
+                if track.cover_art.bg_color:
+                    (r, g, b) = track.cover_art.bg_color
+                    self.colorstr = self.term.on_color_rgb(r, g, b)
+                if track.cover_art.fg_color:
+                    (r, g, b) = track.cover_art.fg_color
+                    self.colorstr += self.term.color_rgb(r, g, b)
+                display_ascii(img, clear=True)
                 self.art_shown = True
 
         if self.help_shown:
@@ -242,11 +271,14 @@ class Interface:
 
         helptext = []
 
-        helptext.append("┌" + "─" * (help_width + 2) + "┐")
+        helptext.append(self.term.normal + "┌" + "─" * (help_width + 2) + "┐")
         helptext.append(help_entry(""))
         helptext.append(
             help_entry(
-                self.term.center(self.term.bold(f"Tuatara {version}"), help_width)
+                self.term.center(
+                    self.term.bold(f"Tuatara {version}"),
+                    help_width,
+                )
             )
         )
         helptext.append(help_entry(""))
@@ -267,9 +299,6 @@ class Interface:
         sys.stdout.write(output)
 
     def toggle_vis(self):
-        if not self.vis_shown and self.term.number_of_colors != 1 << 24:
-            debug("Visualiazion not available when not on a truecolor terminal")
-            return
         self.vis_shown = not self.vis_shown
         self.clear_display = True
 

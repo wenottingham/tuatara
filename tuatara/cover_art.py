@@ -5,12 +5,20 @@
 # SPDX-License-Identifier: GPL-3.0+
 #
 
-from tuatara.image_utils import image_from_file, image_from_buffer
+from tuatara.image_utils import (
+    image_from_file,
+    image_from_buffer,
+    dominant_color,
+    foreground_for,
+)
+from tuatara.settings import settings
 
 
 class CoverArt:
     def __init__(self):
         self.imgdata = None
+        self.bg_color = None
+        self.fg_color = None
         pass
 
     def get_image(self):
@@ -31,6 +39,9 @@ class FileCoverArt(CoverArt):
 
     def get_image(self):
         self.imgdata = image_from_file(self.path)
+        if settings.art.get("dynamic_background"):
+            self.bg_color = dominant_color(self.imgdata)
+            self.fg_color = foreground_for(self.bg_color)
         return self.imgdata
 
 
@@ -44,6 +55,9 @@ class InlineCoverArt(CoverArt):
 
     def set_from_buffer(self, buffer):
         self.imgdata = image_from_buffer(buffer)
+        if settings.art.get("dynamic_background"):
+            self.bg_color = dominant_color(self.imgdata)
+            self.fg_color = foreground_for(self.bg_color)
 
     def get_image(self):
         return self.imgdata

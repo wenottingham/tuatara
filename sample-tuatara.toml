@@ -7,6 +7,8 @@ debugfile = 'tuatara.log'
 [art]
 # What art fetchers to use
 fetchers = ['apple', 'musicbrainz']
+# Whether to automatically set background color to match track art
+dynamic_background = true
 # Ratio of terminal font height to width
 font_ratio = 2.0
 # Pre-ascii-ify art image adjustments

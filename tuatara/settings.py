@@ -21,6 +21,7 @@ class Settings:
             "debugfile": f"tuatara-{datetime.now().isoformat()}.log",
             "art": {
                 "fetchers": ["apple", "musicbrainz"],
+                "dynamic_background": True,
                 "font_ratio": 2.0,
                 "brightness_adj": 0.75,
                 "contrast_adj": 1.25,
@@ -39,6 +40,13 @@ class Settings:
                         continue
                     sys.stderr.write(
                         "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n"
+                    )
+                    errors += 1
+                case "dynamic_background":
+                    if isinstance(datum, bool):
+                        continue
+                    sys.stderr.write(
+                        "Error: 'dynamic_background' must be true or false\n"
                     )
                     errors += 1
                 case "font_ratio":
