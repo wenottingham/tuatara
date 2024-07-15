@@ -61,7 +61,11 @@ def dominant_color(img):
     # Quantize the image, throw out "mostly white", pick the most used
     quantimg = img.quantize().convert("RGB")
     colors = quantimg.getcolors()
-    colors = list(filter(lambda x: sum(x[1][0:3]) < 700, colors))
+    colors = list(
+        filter(
+            lambda x: sum(x[1][0:3]) < 700 * settings.art.get("brightness_adj"), colors
+        )
+    )
     colors.sort(reverse=True)
     color = None
     for i in range(len(colors)):
