@@ -18,6 +18,7 @@ from gi.repository import GdkPixbuf  # noqa: E402, F401
 
 
 def _enhance(image):
+    image = image.convert("RGBA")
     image = ImageEnhance.Brightness(image).enhance(settings.art.get("brightness_adj"))
     image = ImageEnhance.Contrast(image).enhance(settings.art.get("contrast_adj"))
     return image
