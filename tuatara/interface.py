@@ -150,6 +150,7 @@ class Interface:
 
             for h in range(self.art_box.height):
                 output += self.term.move_xy(self.art_box.left, self.art_box.top + h)
+                output += self.colorstr
                 for w in range(self.art_box.width):
                     brightness = grayscale_img.getpixel((w, h)) / 255
                     r, g, b = img.getpixel((w, h))[:3]

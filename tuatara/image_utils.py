@@ -18,6 +18,7 @@ from gi.repository import GdkPixbuf  # noqa: E402, F401
 
 
 def _enhance(image):
+    image = image.convert("RGBA")
     image = ImageEnhance.Brightness(image).enhance(settings.art.get("brightness_adj"))
     image = ImageEnhance.Contrast(image).enhance(settings.art.get("contrast_adj"))
     return image
@@ -61,7 +62,11 @@ def dominant_color(img):
     # Quantize the image, throw out "mostly white", pick the most used
     quantimg = img.quantize().convert("RGB")
     colors = quantimg.getcolors()
-    colors = list(filter(lambda x: sum(x[1][0:3]) < 700, colors))
+    colors = list(
+        filter(
+            lambda x: sum(x[1][0:3]) < 700 * settings.art.get("brightness_adj"), colors
+        )
+    )
     colors.sort(reverse=True)
     color = None
     for i in range(len(colors)):
