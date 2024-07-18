@@ -10,11 +10,15 @@ import signal
 import sys
 import traceback
 
+from functools import lru_cache
+
 from urllib3.util import parse_url
 
 import blessed
 
 from gi.repository import GLib
+
+from tuatara.image_utils import downconvert
 
 from tuatara.settings import settings, debug, version
 
@@ -62,16 +66,12 @@ class Window:
 class Interface:
     def __init__(self):
         self.term = blessed.Terminal()
-        if self.term.number_of_colors != 1 << 24:
+        if "number_of_colors" in settings.art:
+            self.term.number_of_colors = settings.art.get("number_of_colors")
+        if self.term.number_of_colors < 256 and settings.art.get("dynamic_background"):
             art = {}
-            if settings.art.get("visualization") != "none":
-                debug("Visualiazion unavailable due to non-truecolor terminal")
-                art["visualization"] = "none"
-            if settings.art.get("dynamic_background"):
-                debug(
-                    "Dynamic background color unavailable due to non-truecolor terminal"
-                )
-                art["dynamic_background"] = False
+            debug("Dynamic background color unavailable due to limited colors")
+            art["dynamic_background"] = False
             settings.merge_art(art)
         self.set_title(f"Tutatara {version}")
         self.help_canvas = self.populate_help()
@@ -91,6 +91,16 @@ class Interface:
 
     def sigwinch_handler(self, signum=None, stack=None):
         self.need_resize = True
+
+    @lru_cache(maxsize=256)
+    def set_color(self, colortuple):
+        (r, g, b) = colortuple
+        return self.term.color_rgb(r, g, b)
+
+    @lru_cache(maxsize=256)
+    def set_bg_color(self, colortuple):
+        (r, g, b) = colortuple
+        return self.term.on_color_rgb(r, g, b)
 
     def set_size(self):
         text_box = Window()
@@ -136,15 +146,29 @@ class Interface:
 
     def display_info(self, player):
         def display_ascii(image, clear=False):
-            CHAR_RAMP = "   ...',;:clodxkO0KXNWM"
+            SMALL_RAMP = "   ...',;:clodxkO0KXNWM"
+            LARGE_RAMP = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
 
             if not image:
                 return
 
+            if self.term.number_of_colors < 256:
+                ramp = LARGE_RAMP
+                colorfunc = self.set_color
+            else:
+                ramp = SMALL_RAMP
+                colorfunc = self.set_bg_color
+
             output = self.colorstr
             if clear:
                 output += self.term.clear
-            img = image.resize((self.art_box.width, self.art_box.height))
+
+            img = downconvert(
+                image,
+                self.art_box.width,
+                self.art_box.height,
+                self.term.number_of_colors,
+            )
 
             grayscale_img = img.convert("L")
 
@@ -154,9 +178,9 @@ class Interface:
                 for w in range(self.art_box.width):
                     brightness = grayscale_img.getpixel((w, h)) / 255
                     r, g, b = img.getpixel((w, h))[:3]
-                    ascii_char = CHAR_RAMP[int(brightness * (len(CHAR_RAMP) - 1))]
+                    ascii_char = ramp[int(brightness * (len(ramp) - 1))]
 
-                    output += self.term.on_color_rgb(r, g, b) + ascii_char
+                    output += colorfunc((r, g, b)) + ascii_char
                 output += self.term.normal
 
             sys.stdout.write(output)
@@ -235,11 +259,9 @@ class Interface:
             if not self.art_shown and track.cover_art:
                 img = track.cover_art.get_image()
                 if track.cover_art.bg_color:
-                    (r, g, b) = track.cover_art.bg_color
-                    self.colorstr = self.term.on_color_rgb(r, g, b)
+                    self.colorstr = self.set_bg_color(track.cover_art.bg_color)
                 if track.cover_art.fg_color:
-                    (r, g, b) = track.cover_art.fg_color
-                    self.colorstr += self.term.color_rgb(r, g, b)
+                    self.colorstr += self.set_color(track.cover_art.fg_color)
                 display_ascii(img, clear=True)
                 self.art_shown = True
 

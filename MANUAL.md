@@ -181,8 +181,6 @@ Visualization is controlled by the `visualization` parameter in the
 configuration file. Set it to your preferred visualization, or set it to
 `none` to disable it.
 
-#### NOTE: Visualization requires running on a truecolor terminal.
-
 ## Dynamic background color
 
 tuatara will set the background color dynamically based on the cover art's
@@ -191,7 +189,7 @@ color palette.
 To disable this, adjust the `dynamic_background` parameter in the
 configuration file.
 
-#### NOTE: Dynamic background color requires running on a truecolor terminal.
+#### NOTE: Dynamic background color requires at least a 256-color terminal.
 
 ## Playlist support
 

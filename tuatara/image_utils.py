@@ -7,9 +7,13 @@
 
 import io
 
+from functools import cache
+
 import gi
 
 from PIL import Image, ImageEnhance, UnidentifiedImageError
+
+from blessed.colorspace import RGB_256TABLE
 
 from tuatara.settings import settings
 
@@ -18,7 +22,7 @@ from gi.repository import GdkPixbuf  # noqa: E402, F401
 
 
 def _enhance(image):
-    image = image.convert("RGBA")
+    image = image.convert("RGB")
     image = ImageEnhance.Brightness(image).enhance(settings.art.get("brightness_adj"))
     image = ImageEnhance.Contrast(image).enhance(settings.art.get("contrast_adj"))
     return image
@@ -85,3 +89,30 @@ def foreground_for(color):
         return (30, 30, 30)
     else:
         return (225, 225, 225)
+
+
+@cache
+def get_palette(colors):
+    if colors > 256:
+        return None
+    palette = []
+    for i in range(colors):
+        color = RGB_256TABLE[i]
+        palette += [color.red, color.green, color.blue]
+    image = Image.new("P", (16, 16))
+    image.putpalette(palette)
+    return image
+
+
+def downconvert(image, width, height, colors):
+    palette = get_palette(colors)
+    if colors == 16:
+        dither = Image.Dither.FLOYDSTEINBERG
+    else:
+        dither = Image.Dither.NONE
+    if palette:
+        image = image.quantize(colors, palette=palette, dither=dither).convert("RGB")
+    image = image.resize((width, height))
+    if palette:
+        image = image.quantize(colors, palette=palette, dither=dither).convert("RGB")
+    return image
