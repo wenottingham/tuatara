@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tuatara"
-version = "0.5.1"
+version = "0.6.0"
 description = "Tuatara is a text-mode music player."
 authors = ["Bill Nottingham <notting@splat.cc>"]
 license = "GPL-3.0-or-later"
