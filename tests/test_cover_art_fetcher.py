@@ -129,7 +129,7 @@ def test_musicbrainz_artist_with_tracks(capsys):
     artist_with_tracks = entry("Florence + the Machine", "Ceremonials", tracks=16)
     f.fetch(artist_with_tracks)
     cap = capsys.readouterr()
-    assert "mbid-addc312e-3c20-400e-bbd4-69946bb82a2b-7697873196.jpg" in cap.err
+    assert "mbid-71754346-9a28-4617-ba8d-feb7287e04ad-39453304024.jpg" in cap.err
 
 
 def test_musicbrainz_multidisc(capsys):
