@@ -107,7 +107,7 @@ Valid configuration parameters are:
 - ascii_truecolor: Whether to to use ascii art characters in truecolor (instead of color blocks). Default is 'false'. If set to true, will disable `dynamic_background`.
 - font_ratio: In order to keep cover art in a normal aspect ratio, we must approximate the ratio of the terminal font height to its width. Default is `2.0`.
 - brightness_adj: Percentage adjustment (in decimal) of the cover art image's brightness before converting to ASCII art. For no adjustment, set to `1.0`. Default is `0.75`.
-- contrast_adj: Percentage adjustment (in decimal) of the cover art image's contrast before converting to ASCII art. For no adjustment, set to `1.0`. Default is `0.75`.
+- contrast_adj: Percentage adjustment (in decimal) of the cover art image's contrast before converting to ASCII art. For no adjustment, set to `1.0`. Default is `1.25`.
 - visualization: Visualization plugin to use. Set to `'none'` to disable visualization. Options include `'synaescope'`, `'spectrascope'`, `'spacescope'`, `'wavescope'`, and `'goom'`. See "Visualization", below. Default is `synaescope`.
 
 # Controls
@@ -191,8 +191,7 @@ color palette.
 To disable this, adjust the `dynamic_background` parameter in the
 configuration file.
 
-#### NOTE: Dynamic background color requires at least a 256-color terminal,
-#### and is incompatible with `ascii_truecolor`.
+#### NOTE: Dynamic background color requires at least a 256-color terminal, and is incompatible with `ascii_truecolor`.
 
 ## Playlist support
 
