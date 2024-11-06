@@ -26,7 +26,15 @@ def test_help_in_manual(capsys, monkeypatch):
 
     setup_config(["-h", "dummy.flac"])
     cap = capsys.readouterr()
-    assert cap.out in readme
+    # Python 3.13 changes how arguments are printed
+    assert (
+        cap.out in readme
+        or cap.out.replace(
+            "-f, --file FILE       Load configuration from file",
+            "-f FILE, --file FILE  Load configuration from file",
+        )
+        in readme
+    )
 
 
 def test_cli_args(tmp_path):
