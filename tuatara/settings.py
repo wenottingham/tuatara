@@ -22,6 +22,7 @@ class Settings:
             "art": {
                 "fetchers": ["apple", "musicbrainz"],
                 "dynamic_background": True,
+                "ascii_truecolor": False,
                 "font_ratio": 2.0,
                 "brightness_adj": 0.75,
                 "contrast_adj": 1.25,
@@ -48,6 +49,11 @@ class Settings:
                     sys.stderr.write(
                         "Error: 'dynamic_background' must be true or false\n"
                     )
+                    errors += 1
+                case "ascii_truecolor":
+                    if isinstance(datum, bool):
+                        continue
+                    sys.stderr.write("Error: 'ascii_truecolor' must be true or false\n")
                     errors += 1
                 case "font_ratio":
                     if (
