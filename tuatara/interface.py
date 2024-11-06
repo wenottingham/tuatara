@@ -73,6 +73,11 @@ class Interface:
             debug("Dynamic background color unavailable due to limited colors")
             art["dynamic_background"] = False
             settings.merge_art(art)
+        if settings.art.get("ascii_truecolor"):
+            art = {}
+            debug("Dynamic background color unavailable due to `ascii_truecolor`")
+            art["dynamic_background"] = False
+            settings.merge_art(art)
         self.set_title(f"Tutatara {version}")
         self.help_canvas = self.populate_help()
         self.art_shown = None
@@ -146,19 +151,21 @@ class Interface:
 
     def display_info(self, player):
         def display_ascii(image, clear=False):
-            SMALL_RAMP = "   ...',;:clodxkO0KXNWM"
-            LARGE_RAMP = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+            RAMP = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
 
             if not image:
                 return
 
             if self.term.number_of_colors < 256:
-                ramp = LARGE_RAMP
+                ramp = RAMP
                 colorfunc = self.set_color
             else:
-                ramp = SMALL_RAMP
-                colorfunc = self.set_bg_color
-
+                if settings.art.get("ascii_truecolor"):
+                    ramp = RAMP
+                    colorfunc = self.set_color
+                else:
+                    ramp = " "
+                    colorfunc = self.set_bg_color
             output = self.colorstr
             if clear:
                 output += self.term.clear
