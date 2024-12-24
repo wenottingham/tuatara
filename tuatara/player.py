@@ -23,19 +23,19 @@ class Player:
     def __init__(self):
         Gst.init()
         self.playlist = []
-        self.player = Gst.ElementFactory.make("playbin", "player")
+        self.playbin = Gst.ElementFactory.make("playbin", "player")
         self.pixbuf_sink = Gst.ElementFactory.make("gdkpixbufsink", "pixbuf_sink")
         self.pixbuf_sink.set_property("post-messages", False)
-        self.player.set_property("video-sink", self.pixbuf_sink)
+        self.playbin.set_property("video-sink", self.pixbuf_sink)
         self.vis_plugin = Gst.ElementFactory.make(
             settings.art.get("visualization", "vis")
         )
         if self.vis_plugin:
-            flags = self.player.get_property("flags")
+            flags = self.playbin.get_property("flags")
             flags |= GST_PLAY_FLAG_VIS
-            self.player.set_property("flags", flags)
-            self.player.set_property("vis-plugin", self.vis_plugin)
-        bus = self.player.get_bus()
+            self.playbin.set_property("flags", flags)
+            self.playbin.set_property("vis-plugin", self.vis_plugin)
+        bus = self.playbin.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.on_message)
         self.error = None
@@ -51,30 +51,30 @@ class Player:
         debug(f"Playing {self.current_track}")
         p = parse_url(entry.url)
         if p.scheme:
-            self.player.set_property("uri", entry.url)
+            self.playbin.set_property("uri", entry.url)
         else:
-            self.player.set_property("uri", Gst.filename_to_uri(entry.url))
+            self.playbin.set_property("uri", Gst.filename_to_uri(entry.url))
         self.play()
 
     def play(self):
-        self.player.set_state(Gst.State.PLAYING)
+        self.playbin.set_state(Gst.State.PLAYING)
 
     def pause(self):
-        self.player.set_state(Gst.State.PAUSED)
+        self.playbin.set_state(Gst.State.PAUSED)
 
     def play_pause(self):
-        if self.player.current_state == Gst.State.PAUSED:
+        if self.playbin.current_state == Gst.State.PAUSED:
             self.play()
         else:
             self.pause()
 
     def seek_forward(self):
-        (set, track_pos) = self.player.query_position(Gst.Format.TIME)
+        (set, track_pos) = self.playbin.query_position(Gst.Format.TIME)
         new_pos = track_pos + 10 * Gst.SECOND
-        flags = self.player.get_property("flags")
+        flags = self.playbin.get_property("flags")
         flags ^= GST_PLAY_FLAG_VIS
-        self.player.set_property("flags", flags)
-        self.player.seek(
+        self.playbin.set_property("flags", flags)
+        self.playbin.seek(
             1.0,
             Gst.Format.TIME,
             Gst.SeekFlags.FLUSH,
@@ -83,20 +83,20 @@ class Player:
             Gst.SeekType.NONE,
             0,
         )
-        self.player.get_state(Gst.CLOCK_TIME_NONE)
-        flags = self.player.get_property("flags")
+        self.playbin.get_state(Gst.CLOCK_TIME_NONE)
+        flags = self.playbin.get_property("flags")
         flags |= GST_PLAY_FLAG_VIS
-        self.player.set_property("flags", flags)
+        self.playbin.set_property("flags", flags)
 
     def seek_reverse(self):
-        (set, track_pos) = self.player.query_position(Gst.Format.TIME)
+        (set, track_pos) = self.playbin.query_position(Gst.Format.TIME)
         new_pos = track_pos - 10 * Gst.SECOND
         if new_pos < 0:
             new_pos = 0
-        flags = self.player.get_property("flags")
+        flags = self.playbin.get_property("flags")
         flags ^= GST_PLAY_FLAG_VIS
-        self.player.set_property("flags", flags)
-        self.player.seek(
+        self.playbin.set_property("flags", flags)
+        self.playbin.seek(
             1.0,
             Gst.Format.TIME,
             Gst.SeekFlags.FLUSH,
@@ -105,16 +105,16 @@ class Player:
             Gst.SeekType.NONE,
             0,
         )
-        self.player.get_state(Gst.CLOCK_TIME_NONE)
-        flags = self.player.get_property("flags")
+        self.playbin.get_state(Gst.CLOCK_TIME_NONE)
+        flags = self.playbin.get_property("flags")
         flags |= GST_PLAY_FLAG_VIS
-        self.player.set_property("flags", flags)
+        self.playbin.set_property("flags", flags)
 
     def get_current_track(self):
         return self.current_track
 
     def next(self):
-        self.player.set_state(Gst.State.NULL)
+        self.playbin.set_state(Gst.State.NULL)
         self.index += 1
         if self.index >= len(self.playlist):
             self.stop()
@@ -122,31 +122,31 @@ class Player:
         self.cue_from_playlist()
 
     def prev(self):
-        self.player.set_state(Gst.State.NULL)
+        self.playbin.set_state(Gst.State.NULL)
         self.index -= 1
         if self.index < 0:
             self.index = 0
         self.cue_from_playlist()
 
     def raise_volume(self):
-        volume = self.player.get_property("volume")
+        volume = self.playbin.get_property("volume")
         volume += 0.1
         if volume > 1.0:
             volume = 1.0
-        self.player.set_property("volume", volume)
-        self.player.set_property("mute", 0)
+        self.playbin.set_property("volume", volume)
+        self.playbin.set_property("mute", 0)
 
     def lower_volume(self):
-        volume = self.player.get_property("volume")
+        volume = self.playbin.get_property("volume")
         volume -= 0.1
         if volume < 0.0:
             volume = 0.0
-        self.player.set_property("volume", volume)
-        self.player.set_property("mute", 0)
+        self.playbin.set_property("volume", volume)
+        self.playbin.set_property("mute", 0)
 
     def mute_or_unmute(self):
-        mute = self.player.get_property("mute")
-        self.player.set_property("mute", not mute)
+        mute = self.playbin.get_property("mute")
+        self.playbin.set_property("mute", not mute)
 
     def vis_available(self):
         return bool(self.vis_plugin)
@@ -157,15 +157,15 @@ class Player:
     def get_status(self):
         if not self.current_track:
             return "finished"
-        (set, track_pos) = self.player.query_position(Gst.Format.TIME)
+        (set, track_pos) = self.playbin.query_position(Gst.Format.TIME)
         if self.current_track.title or track_pos > (Gst.SECOND / 5):
             return "ready"
         else:
             return "not ready"
 
     def get_status_str(self):
-        (set, track_pos) = self.player.query_position(Gst.Format.TIME)
-        (set, track_len) = self.player.query_duration(Gst.Format.TIME)
+        (set, track_pos) = self.playbin.query_position(Gst.Format.TIME)
+        (set, track_len) = self.playbin.query_duration(Gst.Format.TIME)
 
         if track_pos > 0:
             pos_sec = track_pos / Gst.SECOND
@@ -183,16 +183,16 @@ class Player:
 
         status_str = f"{pos_str} / {len_str}"
 
-        if self.player.current_state == Gst.State.PAUSED:
+        if self.playbin.current_state == Gst.State.PAUSED:
             status_str = f"{status_str} [PAUSED]"
 
-        if self.player.get_property("mute"):
+        if self.playbin.get_property("mute"):
             status_str = f"{status_str} [MUTED]"
 
         return status_str
 
     def stop(self, error=None):
-        self.player.set_state(Gst.State.NULL)
+        self.playbin.set_state(Gst.State.NULL)
         self.current_track = None
         if error:
             self.error = error
@@ -226,8 +226,6 @@ class Player:
                             debug(f"Using inline cover art for {self.current_track}")
                             self.current_track.cover_art = InlineCoverArt(mapping.data)
                         buffer.unmap(mapping)
-            case _:
-                pass
 
     def on_message(self, bus, message):
         t = message.type
@@ -237,6 +235,6 @@ class Player:
             taglist = message.parse_tag()
             taglist.foreach(self.parse_tags)
         elif t == Gst.MessageType.ERROR:
-            self.player.set_state(Gst.State.NULL)
-            err, debug = message.parse_error()
+            self.playbin.set_state(Gst.State.NULL)
+            err, _ = message.parse_error()
             self.stop(err)

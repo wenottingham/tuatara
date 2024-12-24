@@ -49,7 +49,7 @@ class AppleArtFetcher(ArtFetcher):
 
     def fetch(self, track):
         def download_url(result):
-            return re.sub("100x100bb", "2000x2000bb", result["artworkUrl100"])
+            return result["artworkUrl100"].replace("100x100bb", "2000x2000bb")
 
         s_artist = sanitize_artist(track.artist)
         s_album = sanitize_album(track.album)

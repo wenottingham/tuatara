@@ -19,7 +19,6 @@ class CoverArt:
         self.imgdata = None
         self.bg_color = None
         self.fg_color = None
-        pass
 
     def get_image(self):
         pass

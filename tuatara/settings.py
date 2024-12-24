@@ -72,8 +72,6 @@ class Settings:
                         continue
                     sys.stderr.write(f"Error: '{item}' must be between 0 and 2\n")
                     errors += 1
-                case _:
-                    pass
         return errors == 0
 
     def load(self, path):
