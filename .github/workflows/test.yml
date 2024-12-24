@@ -23,6 +23,9 @@ jobs:
       with:
         python-version: ${{matrix.python-version}}
 
+    - name: Update
+      run: |
+        sudo apt-get update
     - name: Install system build deps
       run: |
         sudo apt install libgirepository1.0-dev gir1.2-gstreamer-1.0
@@ -44,3 +47,15 @@ jobs:
       run: |
         SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) \
         poetry run pex . -o dist/tuatara.${{matrix.python-version}}  -c tuatara
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

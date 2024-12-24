@@ -3,6 +3,7 @@ import sys
 import tomllib
 
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
 
@@ -102,7 +103,7 @@ brightness_adj = 1.1
 
     assert defaults._settings.get("debug") is True
     assert defaults._settings.get("debugfile") == "tt.log"
-    assert defaults._settings.get("art").get("brightness_adj") == 1.1
+    assert Decimal(defaults._settings.get("art").get("brightness_adj")) == Decimal(1.1)
 
 
 def test_load_bad_file(tmp_path):

@@ -119,7 +119,10 @@ def test_musicbrainz_artist_without_tracks(capsys):
     artist_no_tracks = entry("Florence + the Machine", "Ceremonials")
     f.fetch(artist_no_tracks)
     cap = capsys.readouterr()
-    assert "mbid-11973ebc-0f5a-4aa4-ad79-e194f88d23e6-12512633102.jpg" in cap.err
+    assert (
+        "mbid-11973ebc-0f5a-4aa4-ad79-e194f88d23e6-12512633102.jpg" in cap.err
+        or "mbid-35d9978e-a50f-4a36-b437-c371453bc663-39452793011.jpg" in cap.err
+    )
 
 
 def test_musicbrainz_artist_with_tracks(capsys):

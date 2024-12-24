@@ -156,16 +156,12 @@ class Interface:
             if not image:
                 return
 
-            if self.term.number_of_colors < 256:
+            if self.term.number_of_colors < 256 or settings.art.get("ascii_truecolor"):
                 ramp = RAMP
                 colorfunc = self.set_color
             else:
-                if settings.art.get("ascii_truecolor"):
-                    ramp = RAMP
-                    colorfunc = self.set_color
-                else:
-                    ramp = " "
-                    colorfunc = self.set_bg_color
+                ramp = " "
+                colorfunc = self.set_bg_color
             output = self.colorstr
             if clear:
                 output += self.term.clear
@@ -384,8 +380,6 @@ class Interface:
                         player.lower_volume()
                     case "?" | "h":
                         self.show_help()
-                    case _:
-                        pass
         return True
 
     def excepthook(self, ex_type, ex_value, tb):
