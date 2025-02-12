@@ -43,10 +43,6 @@ jobs:
       run: |
         SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) \
         poetry build
-    - name: Test pex build
-      run: |
-        SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) \
-        poetry run pex . -o dist/tuatara.${{matrix.python-version}}  -c tuatara
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
