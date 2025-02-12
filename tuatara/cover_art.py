@@ -21,6 +21,7 @@ class CoverArt:
         self.fg_color = None
 
     def get_image(self):
+        # implemented in subclasses
         pass
 
 

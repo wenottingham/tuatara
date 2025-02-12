@@ -20,14 +20,16 @@ from tuatara.playlist import parse_directory, parse_file
 from tuatara.player import Player
 from tuatara.settings import settings, config_dir, version
 
+CONFIG_FILE = "tuatara.toml"
+
 
 def setup_config(args=sys.argv[1:]):
     def load_config(args):
         if args.file:
             return settings.load(args.file)
-        if os.path.exists("tuatara.toml"):
-            return settings.load("tuatara.toml")
-        default_config = os.path.join(config_dir(), "tuatara.toml")
+        if os.path.exists(CONFIG_FILE):
+            return settings.load(CONFIG_FILE)
+        default_config = os.path.join(config_dir(), CONFIG_FILE)
         if os.path.exists(default_config):
             return settings.load(default_config)
         return True
