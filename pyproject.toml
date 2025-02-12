@@ -24,7 +24,6 @@ blessed = "^1.20.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
-pex = "^2.3.1"
 
 [tool.poetry.scripts]
 tuatara = 'tuatara.main:main'

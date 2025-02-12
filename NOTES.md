@@ -5,7 +5,6 @@ Notes on future work
 - Subsonic/navidrome/plex streaming support
 - Actually testing non-Linux platforms
 - Unit/integration tests for player & interface
-- Publish to PyPI
 
 # Unlikely items
 - Significant cover art fetching improvements
