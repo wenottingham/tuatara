@@ -15,7 +15,7 @@ import urllib3
 
 from tuatara.cover_art import FileCoverArt
 from tuatara.sanitize import sanitize_artist, sanitize_album
-from tuatara.settings import debug
+from tuatara.settings import debug, version
 
 
 class ArtFetcher:
@@ -122,7 +122,7 @@ class MusicBrainzArtFetcher(ArtFetcher):
         self.headers = {
             "Accept": "application/json",
             # These folks care, we'll be truthful.
-            "User-Agent": "Tuatara/0.0.0dev (notting@splat.cc)",
+            "User-Agent": f"Tuatara/{version} (notting@splat.cc)",
         }
 
     def fetch(self, track):
