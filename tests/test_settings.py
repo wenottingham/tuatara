@@ -48,16 +48,16 @@ def test_validation(capsys):
         "fetchers": 3,
         "dynamic_background": "yo",
         "font_ratio": -1,
-        "brightness_adj": 10,
-        "contrast_adj": True,
+        "brightness_adj": -3.2,
+        "contrast_adj": "fred",
         "visualization": 3.14159,
     }
     error_msgs = (
-        "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n",
+        "Error: 'fetchers' must be a list. Use '[]' to disable art fetching\n",
         "Error: 'dynamic_background' must be true or false\n",
         "Error: 'font_ratio' must be a positive number\n",
-        "Error: 'brightness_adj' must be between 0 and 2\n",
-        "Error: 'contrast_adj' must be between 0 and 2\n",
+        "Error: 'brightness_adj' must be a non-negative number\n",
+        "Error: 'contrast_adj' must be a non-negative number\n",
         "Error: 'visualization' must be a string\n",
     )
 

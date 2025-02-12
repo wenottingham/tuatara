@@ -32,47 +32,35 @@ class Settings:
         self._debugobj = None
 
     def validate_art_settings(self, data):
-        errors = 0
+        errors = []
         for item in data.keys():
             datum = data[item]
             match item:
                 case "fetchers":
                     if isinstance(datum, list):
                         continue
-                    sys.stderr.write(
-                        "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n"
+                    errors.append(
+                        "'fetchers' must be a list. Use '[]' to disable art fetching\n"
                     )
-                    errors += 1
-                case "dynamic_background":
+                case "dynamic_background" | "ascii_truecolor":
                     if isinstance(datum, bool):
                         continue
-                    sys.stderr.write(
-                        "Error: 'dynamic_background' must be true or false\n"
-                    )
-                    errors += 1
-                case "ascii_truecolor":
-                    if isinstance(datum, bool):
-                        continue
-                    sys.stderr.write("Error: 'ascii_truecolor' must be true or false\n")
-                    errors += 1
+                    errors.append(f"'{item}' must be true or false\n")
                 case "font_ratio":
-                    if (
-                        isinstance(datum, float) or isinstance(datum, int)
-                    ) and datum > 0:
+                    if isinstance(datum, (float, int)) and datum > 0:
                         continue
-                    sys.stderr.write("Error: 'font_ratio' must be a positive number\n")
-                    errors += 1
+                    errors.append("'font_ratio' must be a positive number\n")
                 case "visualization":
                     if isinstance(datum, str):
                         continue
-                    sys.stderr.write(f"Error: '{item}' must be a string\n")
-                    errors += 1
+                    errors.append(f"'{item}' must be a string\n")
                 case "brightness_adj" | "contrast_adj":
-                    if isinstance(datum, float) and datum >= 0 and datum <= 2:
+                    if isinstance(datum, (float, int)) and datum >= 0:
                         continue
-                    sys.stderr.write(f"Error: '{item}' must be between 0 and 2\n")
-                    errors += 1
-        return errors == 0
+                    errors.append(f"'{item}' must be a non-negative number\n")
+        for error in errors:
+            sys.stderr.write(f"Error: {error}")
+        return len(errors) == 0
 
     def load(self, path):
         with open(path, "rb") as f:
