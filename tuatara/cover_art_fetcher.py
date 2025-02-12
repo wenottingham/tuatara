@@ -20,9 +20,10 @@ from tuatara.settings import debug
 
 class ArtFetcher:
     def __init__(self):
-        pass
+        self.http = urllib3.PoolManager()
 
     def fetch(self, track):
+        # implemented in subclasses
         pass
 
     def download(self, url, dest):
@@ -40,7 +41,6 @@ class ArtFetcher:
 class AppleArtFetcher(ArtFetcher):
     def __init__(self):
         super().__init__()
-        self.http = urllib3.PoolManager()
         self.headers = {
             "Accept": "application/json",
             # We're totally a web browser!
@@ -119,7 +119,6 @@ class AppleArtFetcher(ArtFetcher):
 class MusicBrainzArtFetcher(ArtFetcher):
     def __init__(self):
         super().__init__()
-        self.http = urllib3.PoolManager()
         self.headers = {
             "Accept": "application/json",
             # These folks care, we'll be truthful.
