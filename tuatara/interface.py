@@ -384,7 +384,7 @@ class Interface:
 
     def excepthook(self, ex_type, ex_value, tb):
         if settings.debug:
-            traceback.print_exception(ex_type, ex_value, tb, None, settings._debugobj)
+            traceback.print_exception(ex_type, ex_value, tb, file=settings._debugobj)
             settings._debugobj.flush()
         self.error = "Unexpected error, check debug logs for details."
         self.stop()

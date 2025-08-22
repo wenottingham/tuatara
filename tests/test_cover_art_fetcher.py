@@ -2,6 +2,9 @@ import os
 import sys
 import time
 
+import urllib3
+from unittest import mock
+
 from tuatara.cover_art_fetcher import AppleArtFetcher, MusicBrainzArtFetcher
 from tuatara.playlist_entry import PlaylistEntry
 from tuatara.sanitize import sanitize_artist, sanitize_album
@@ -16,6 +19,20 @@ def entry(artist, album, tracks=None, path=None):
     p.album = album
     p.track_total = tracks
     return p
+
+
+def test_exception_handling(capsys):
+    with mock.patch(
+        "urllib3.PoolManager.request",
+        side_effect=urllib3.exceptions.HTTPError("Kablooie"),
+    ):
+        f = AppleArtFetcher()
+        settings._debugobj = sys.stderr
+
+        not_a_thing = entry("🐕➕🌈", "")
+        f.fetch(not_a_thing)
+        cap = capsys.readouterr()
+        assert "failed with an exception" in cap.err
 
 
 def test_apple_not_found(capsys):

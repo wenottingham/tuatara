@@ -8,6 +8,7 @@
 import json
 import os
 import re
+import traceback
 
 from urllib.parse import quote
 
@@ -15,7 +16,7 @@ import urllib3
 
 from tuatara.cover_art import FileCoverArt
 from tuatara.sanitize import sanitize_artist, sanitize_album
-from tuatara.settings import debug, version
+from tuatara.settings import settings, debug, version
 
 
 class ArtFetcher:
@@ -26,12 +27,25 @@ class ArtFetcher:
         # implemented in subclasses
         pass
 
+    def get(self, url, log, headers=None):
+        try:
+            response = self.http.request("GET", url=url, headers=headers)
+        except urllib3.exceptions.HTTPError as ex:
+            debug(f"{log} of {url} failed with an exception")
+            if settings.debug:
+                traceback.print_exception(ex, file=settings._debugobj)
+                settings._debugobj.flush()
+            return None
+        if response.status != 200:
+            debug(f"{log} of {url} failed with {response.status}")
+            return None
+        return response
+
     def download(self, url, dest):
         directory = os.path.dirname(dest)
         os.makedirs(directory, mode=0o755, exist_ok=True)
-        resp = self.http.request("GET", url)
-        if resp.status != 200:
-            debug(f"Download of {url} failed with {resp.status}")
+        resp = self.get(url, "Download")
+        if resp is None:
             return None
         with open(dest, "wb") as f:
             f.write(resp.data)
@@ -61,9 +75,8 @@ class AppleArtFetcher(ArtFetcher):
             f"https://itunes.apple.com/search?media=music&entity=album&term={querystr}"
         )
 
-        resp = self.http.request("GET", path, headers=self.headers)
-        if resp.status != 200:
-            debug("Initial search failed with {resp.status}")
+        resp = self.get(path, "Initial search", headers=self.headers)
+        if resp is None:
             return None
         jsondata = resp.json()
         if jsondata["resultCount"] < 1:
@@ -141,9 +154,8 @@ class MusicBrainzArtFetcher(ArtFetcher):
 
         debug(f"Finding art for {track} via MusicBrainz…")
         path = f"https://musicbrainz.org/ws/2/artist?limit=5&query={s_artist}"
-        resp = self.http.request("GET", path, headers=self.headers)
-        if resp.status != 200:
-            debug(f"Artist search failed with {resp.status}")
+        resp = self.get(path, "Artist search", headers=self.headers)
+        if resp is None:
             return None
         jsondata = resp.json()
         if jsondata["count"] == 0:
@@ -159,9 +171,8 @@ class MusicBrainzArtFetcher(ArtFetcher):
         path = f'https://musicbrainz.org/ws/2/release?query=release:"{s_album}" AND arid:{artist_id}'
         if tracks:
             path += f" AND tracksmedium:{tracks}"
-        resp = self.http.request("GET", path, headers=self.headers)
-        if resp.status != 200:
-            debug(f"Album search failed with {resp.status}")
+        resp = self.get(path, "Album search", headers=self.headers)
+        if resp is None:
             return None
         jsondata = resp.json()
 
@@ -192,7 +203,14 @@ class MusicBrainzArtFetcher(ArtFetcher):
         for mbid in ids:
             path = f"https://coverartarchive.org/release/{mbid}/front"
 
-            resp = self.http.request("HEAD", path, headers=self.headers, redirect=False)
+            try:
+                resp = self.http.request(
+                    "HEAD", path, headers=self.headers, redirect=False
+                )
+            except urllib3.exceptions.HTTPError:
+                debug(f"HEAD of {mbid} failed with an exception")
+                continue
+
             if resp.status == 307:
                 url = resp.get_redirect_location()
                 break
