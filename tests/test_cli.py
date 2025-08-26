@@ -40,7 +40,7 @@ def test_help_in_manual(capsys, monkeypatch):
 def test_cli_args(tmp_path):
     newfile = """
 [art]
-dither = "random"
+visualization = "random"
 """
     conf_file = os.path.join(tmp_path, "test.toml")
     with open(conf_file, "w") as f:
@@ -50,7 +50,7 @@ dither = "random"
 
     assert settings._settings.get("debug") is True
     assert settings._settings.get("debugfile") == "foo.log"
-    assert settings._settings.get("art").get("dither") == "random"
+    assert settings._settings.get("art").get("visualization") == "random"
 
 
 def test_version(capsys, monkeypatch):

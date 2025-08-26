@@ -85,7 +85,7 @@ def test_directory_walk():
         ]
 
         pl = parse_directory("fakedir")
-        urls = list(map(lambda x: x.url, pl))
+        urls = [x.url for x in pl]
         assert len(pl) == 3
         assert "/foo/file.flac" in urls
         assert "/foo/bar/file2.flac" in urls

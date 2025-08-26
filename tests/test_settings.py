@@ -69,6 +69,24 @@ def test_validation(capsys):
         assert msg in cap.err
 
 
+def test_fetcher_validation(capsys):
+    defaults = Settings()
+
+    bad_data = {
+        "fetchers": ["blep"],
+    }
+    error_msgs = (
+        "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n",
+    )
+
+    old_settings = defaults._settings
+    defaults.merge_art(bad_data)
+    cap = capsys.readouterr()
+    assert defaults._settings == old_settings
+    for msg in error_msgs:
+        assert msg in cap.err
+
+
 def test_override():
     defaults = Settings()
 

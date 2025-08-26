@@ -90,8 +90,8 @@ class AppleArtFetcher(ArtFetcher):
         debug(json.dumps(jsondata, indent=4))
 
         if tracks:
-            results = reversed(
-                sorted(results, key=lambda x: abs(x.get("trackCount") - tracks))
+            results = sorted(
+                results, key=lambda x: abs(x.get("trackCount") - tracks), reverse=True
             )
 
         for result in results:
@@ -196,7 +196,7 @@ class MusicBrainzArtFetcher(ArtFetcher):
         # MusicBrainz search isn't idempotent for multiple score=100 entries
         filtered_results = sorted(filtered_results, key=lambda x: (x["score"], x["id"]))
 
-        ids = list(map(lambda x: x["id"], filtered_results))
+        ids = [x["id"] for x in filtered_results]
         debug(f"Filtered album search yielded {ids}")
 
         url = None
