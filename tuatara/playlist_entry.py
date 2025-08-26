@@ -83,6 +83,7 @@ class PlaylistEntry:
                         return
 
         if not self.album or not self.artist:
+            self.fetch_status = "failed"
             return
 
         # Check cache
@@ -108,7 +109,6 @@ class PlaylistEntry:
             self.fetch_status = "fetching"
 
             Thread(target=fetch, args=[configured_fetchers, cached_art_path]).start()
-            return
-
-        self.fetch_status = "failed"
-        debug(f"No art found for {self}")
+        else:
+            debug("No configured fetchers")
+            self.fetch_status = "failed"

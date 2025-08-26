@@ -17,8 +17,23 @@ def entry(artist, album, tracks=None, path=None):
     p = PlaylistEntry(path or "foo.flac")
     p.artist = artist
     p.album = album
+    p.title = None
     p.track_total = tracks
     return p
+
+
+def test_http_response_handling(capsys):
+    with mock.patch("urllib3.PoolManager.request") as urllib3_request:
+        urllib3_request.return_value = urllib3.response.HTTPResponse(
+            status=403, body=""
+        )
+        f = AppleArtFetcher()
+        settings._debugobj = sys.stderr
+
+        not_a_thing = entry("🐕➕🌈", "🐕➕🌈")
+        f.fetch(not_a_thing)
+        cap = capsys.readouterr()
+        assert "failed with 403" in cap.err
 
 
 def test_exception_handling(capsys):
@@ -29,7 +44,7 @@ def test_exception_handling(capsys):
         f = AppleArtFetcher()
         settings._debugobj = sys.stderr
 
-        not_a_thing = entry("🐕➕🌈", "")
+        not_a_thing = entry("🐕➕🌈", "🐕➕🌈")
         f.fetch(not_a_thing)
         cap = capsys.readouterr()
         assert "failed with an exception" in cap.err
@@ -39,7 +54,7 @@ def test_apple_not_found(capsys):
     f = AppleArtFetcher()
     settings._debugobj = sys.stderr
 
-    not_a_thing = entry("🐕➕🌈", "")
+    not_a_thing = entry("🐕➕🌈", "🐕➕🌈")
     f.fetch(not_a_thing)
     cap = capsys.readouterr()
     assert "No results found" in cap.err
@@ -103,7 +118,7 @@ def test_musicbrainz_no_artist(capsys):
     f = MusicBrainzArtFetcher()
     settings._debugobj = sys.stderr
 
-    not_an_artist = entry("🐕➕🌈", "")
+    not_an_artist = entry("🐕➕🌈", "🐕➕🌈")
     f.fetch(not_an_artist)
     cap = capsys.readouterr()
     assert "No artists found" in cap.err
@@ -181,41 +196,34 @@ def test_async_apple(tmp_path, monkeypatch):
     playlist_entry.find_cover_art()
     timeout = 15
     cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
-    while timeout > 0:
-        art = playlist_entry.cover_art
-        if art:
-            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
-            break
-        if playlist_entry.fetch_status == "failed":
+    while timeout > 0 and playlist_entry.fetch_status != "failed":
+        if playlist_entry.cover_art:
+            assert playlist_entry.cover_art.path == os.path.join(
+                tmp_path, "tuatara", "artwork", cached_file
+            )
             break
         time.sleep(1)
         timeout -= 1
-    assert art is not None
+    assert playlist_entry.cover_art is not None
 
 
-def test_async_apple_not_found(tmp_path, monkeypatch):
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+def test_async_apple_not_found():
     settings._settings["art"]["fetchers"] = ["apple"]
     settings.set_debug(False)
 
-    playlist_entry = entry(
-        "🐕➕🌈",
-        "",
-    )
+    playlist_entry = entry("🐕➕🌈", "🐕➕🌈")
 
     playlist_entry.find_cover_art()
     timeout = 15
-    cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
-    while timeout > 0:
-        art = playlist_entry.cover_art
-        if art:
-            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
-            break
-        if playlist_entry.fetch_status == "failed":
-            break
+    while (
+        timeout > 0
+        and playlist_entry.cover_art is None
+        and playlist_entry.fetch_status != "failed"
+    ):
         time.sleep(1)
         timeout -= 1
-    assert art is None
+    assert playlist_entry.cover_art is None
+    assert playlist_entry.fetch_status == "failed"
 
 
 def test_async_musicbrainz(tmp_path, monkeypatch):
@@ -233,38 +241,58 @@ def test_async_musicbrainz(tmp_path, monkeypatch):
     playlist_entry.find_cover_art()
     timeout = 15
     cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
-    while timeout > 0:
-        art = playlist_entry.cover_art
-        if art:
-            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
-            break
-        if playlist_entry.fetch_status == "failed":
+    while timeout > 0 and playlist_entry.fetch_status != "failed":
+        if playlist_entry.cover_art:
+            assert playlist_entry.cover_art.path == os.path.join(
+                tmp_path, "tuatara", "artwork", cached_file
+            )
             break
         time.sleep(1)
         timeout -= 1
-    assert art is not None
+    assert playlist_entry.cover_art is not None
 
 
-def test_async_musicbrainz_not_found(tmp_path, monkeypatch):
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+def test_async_musicbrainz_not_found():
     settings._settings["art"]["fetchers"] = ["musicbrainz"]
     settings.set_debug(False)
 
-    playlist_entry = entry(
-        "🐕➕🌈",
-        "",
-    )
+    playlist_entry = entry("🐕➕🌈", "🐕➕🌈")
 
     playlist_entry.find_cover_art()
     timeout = 15
-    cached_file = f"{sanitize_artist(playlist_entry.artist)}-{sanitize_album(playlist_entry.album)}.art"
-    while timeout > 0:
-        art = playlist_entry.cover_art
-        if art:
-            assert art.path == os.path.join(tmp_path, "tuatara", "artwork", cached_file)
-            break
-        if playlist_entry.fetch_status == "failed":
-            break
+    while (
+        timeout > 0
+        and playlist_entry.cover_art is None
+        and playlist_entry.fetch_status != "failed"
+    ):
         time.sleep(1)
         timeout -= 1
-    assert art is None
+    assert playlist_entry.cover_art is None
+    assert playlist_entry.fetch_status == "failed"
+
+
+def test_no_fetchers(capsys):
+    settings._settings["art"]["fetchers"] = ["blep"]
+    settings.set_debug(True)
+    settings._debugobj = sys.stderr
+
+    playlist_entry = entry("🐕➕🌈", "🐕➕🌈")
+
+    playlist_entry.find_cover_art()
+    cap = capsys.readouterr()
+    assert playlist_entry.cover_art is None
+    assert playlist_entry.fetch_status == "failed"
+    assert "No fetcher named blep" in cap.err
+    assert "No configured fetchers" in cap.err
+
+
+def test_no_album_so_dont_bother():
+    settings._settings["art"]["fetchers"] = ["apple"]
+    settings.set_debug(True)
+    settings._debugobj = sys.stderr
+
+    playlist_entry = entry("🐕➕🌈", "")
+
+    playlist_entry.find_cover_art()
+    assert playlist_entry.cover_art is None
+    assert playlist_entry.fetch_status == "failed"

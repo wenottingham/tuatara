@@ -16,6 +16,7 @@ def test_sample_matches_defaults():
         sample = tomllib.load(f)
     defaults._settings["debugfile"] = "tuatara.log"
     assert defaults._settings == sample
+    assert sample["art"] == defaults.get_art()
 
 
 def test_debug_setting():
@@ -50,11 +51,13 @@ def test_validation(capsys):
         "font_ratio": -1,
         "brightness_adj": 10,
         "contrast_adj": True,
+        "ascii_truecolor": "maybe",
         "visualization": 3.14159,
     }
     error_msgs = (
         "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n",
         "Error: 'dynamic_background' must be true or false\n",
+        "Error: 'ascii_truecolor' must be true or false\n",
         "Error: 'font_ratio' must be a positive number\n",
         "Error: 'brightness_adj' must be between 0 and 2\n",
         "Error: 'contrast_adj' must be between 0 and 2\n",
@@ -96,6 +99,8 @@ def test_override():
         "brightness_adj": 1.0,
         "contrast_adj": 1.99,
         "visualization": "goom",
+        "ascii_truecolor": True,
+        "dynamic_background": False,
     }
 
     defaults.merge_art(good_data)
@@ -179,3 +184,34 @@ def test_debug(capsys):
     debug("Test message")
     cap = capsys.readouterr()
     assert cap.err == "DEBUG: Test message\n"
+
+
+def test_nodebug(capsys):
+    settings.set_debug(False)
+    settings._debugobj = sys.stderr
+
+    debug("Test message")
+    cap = capsys.readouterr()
+    assert cap.err == ""
+
+
+def test_good_debugfile(tmp_path, capsys):
+    settings.set_debug(True)
+    settings._debugobj = None
+    settings.set_debugfile(f"{tmp_path}/wow")
+    debug("Test message")
+    cap = capsys.readouterr()
+    outputfile = open(f"{tmp_path}/wow")
+    data = outputfile.read()
+    assert cap.err == ""
+    assert data == "DEBUG: Test message\n"
+
+
+def test_bad_debugfile(capsys):
+    settings.set_debug(True)
+    settings._debugobj = None
+    settings.set_debugfile("/wow")
+    debug("Test message")
+    cap = capsys.readouterr()
+    assert settings._debugobj is None
+    assert "Error: cannot open" in cap.err

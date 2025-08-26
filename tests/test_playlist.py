@@ -1,8 +1,9 @@
 import os
+from contextlib import chdir
 
 from unittest import mock
 
-from tuatara.playlist import parse_file, parse_directory, shuffle
+from tuatara.playlist import create_playlist, parse_file, parse_directory, shuffle
 
 
 def test_bad_file():
@@ -54,11 +55,34 @@ https://example.com/test2.flac
     with open(os.path.join(tmp_path, "temp.m3u"), "w") as f:
         f.write(playlist_text)
     pl = parse_file(os.path.join(tmp_path, "temp.m3u"), True)
-    for item in pl:
-        print(item.url)
     assert len(pl) == 2
     assert pl[0].url == "https://example.com/test2.flac"
     assert pl[1].url == f"{tmp_path}/tmp.flac"
+
+
+def test_good_m3u_pl(tmp_path):
+    with open(os.path.join(tmp_path, "tmp.flac"), "w") as f:
+        f.close()
+    os.mkdir(os.path.join(tmp_path, "bar"))
+    with open(os.path.join(tmp_path, "bar", "test1.flac"), "w") as f:
+        f.close()
+    playlist_text = f"""
+#EXTM3U
+#EXTINF:123
+bar/test1.flac
+#EXTINF:234
+https://example.com/test2.flac
+#EXTINF:345
+{tmp_path}/tmp.flac
+"""
+    with open(os.path.join(tmp_path, "temp.m3u"), "w") as f:
+        f.write(playlist_text)
+    with chdir(tmp_path):
+        pl = create_playlist(["temp.m3u"])
+        assert len(pl) == 3
+        assert pl[0].url == f"{tmp_path}/bar/test1.flac"
+        assert pl[1].url == "https://example.com/test2.flac"
+        assert pl[2].url == f"{tmp_path}/tmp.flac"
 
 
 def test_bad_m3u(tmp_path):
@@ -73,6 +97,25 @@ https://example.com/test2.flac
         f.write(playlist_text)
     pl = parse_file(os.path.join(tmp_path, "temp.m3u"), True)
     assert pl is None
+
+
+def test_create_playlist(tmp_path):
+    with chdir(tmp_path):
+        with open("foo.flac", "w") as f:
+            f.close()
+        os.mkdir("bar")
+        with open("bar/bar.mp3", "w") as f:
+            f.close()
+    pl = create_playlist([tmp_path, "https://somewhere.over/the/rainbow.opus"])
+    assert len(pl) == 3
+    assert pl[0].url == f"{os.path.join(tmp_path, 'foo.flac')}"
+    assert pl[1].url == f"{os.path.join(tmp_path, 'bar/bar.mp3')}"
+    assert pl[2].url == "https://somewhere.over/the/rainbow.opus"
+
+
+def test_create_playlist_badfile():
+    pl = create_playlist(["something-that-does-not-exist"])
+    assert len(pl) == 0
 
 
 def test_directory_walk():

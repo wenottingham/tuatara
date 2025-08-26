@@ -23,9 +23,7 @@ class ArtFetcher:
     def __init__(self):
         self.http = urllib3.PoolManager()
 
-    def fetch(self, track):
-        # implemented in subclasses
-        pass
+    def fetch(self, track): ...
 
     def get(self, url, log, headers=None):
         try:

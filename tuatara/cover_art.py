@@ -20,9 +20,7 @@ class CoverArt:
         self.bg_color = None
         self.fg_color = None
 
-    def get_image(self):
-        # implemented in subclasses
-        pass
+    def get_image(self): ...
 
 
 class FileCoverArt(CoverArt):

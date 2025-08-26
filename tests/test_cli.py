@@ -3,7 +3,7 @@ import sys
 import tomllib
 
 from argparse import ArgumentParser
-
+from contextlib import chdir
 
 if not sys.warnoptions:
     import warnings
@@ -51,6 +51,48 @@ visualization = "random"
     assert settings._settings.get("debug") is True
     assert settings._settings.get("debugfile") == "foo.log"
     assert settings._settings.get("art").get("visualization") == "random"
+
+
+def test_cli_bad_args(tmp_path):
+    newfile = """
+[art]
+fetchers = 3
+"""
+    conf_file = os.path.join(tmp_path, "test.toml")
+    with open(conf_file, "w") as f:
+        f.write(newfile)
+
+    r = setup_config(["-d", "--debugfile", "foo.log", "-f", conf_file, "dummy.flac"])
+    assert r == 1
+
+
+def test_xdg_settings(tmp_path, monkeypatch):
+    newfile = """
+[art]
+visualization = "blep"
+"""
+    with chdir(tmp_path):
+        os.mkdir("wow")
+        with open("wow/tuatara.toml", "w") as f:
+            f.write(newfile)
+
+        monkeypatch.setenv("XDG_CONFIG_HOME", os.path.join(tmp_path, "wow"))
+        setup_config("dummy.flac")
+
+        assert settings._settings.get("art").get("visualization") == "blep"
+
+
+def test_cwd_settings(tmp_path):
+    newfile = """
+[art]
+visualization = "wow"
+"""
+    with chdir(tmp_path):
+        with open("tuatara.toml", "w") as f:
+            f.write(newfile)
+
+        setup_config("dummy.flac")
+        assert settings._settings.get("art").get("visualization") == "wow"
 
 
 def test_version(capsys, monkeypatch):
