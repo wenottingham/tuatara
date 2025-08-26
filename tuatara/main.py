@@ -11,11 +11,8 @@ import argparse
 import os
 import sys
 
-from urllib3.util import parse_url
-
-
 from tuatara.interface import Interface
-from tuatara.playlist import parse_directory, parse_file, shuffle
+from tuatara.playlist import create_playlist, shuffle
 from tuatara.player import Player
 from tuatara.settings import settings, config_dir, version
 
@@ -67,27 +64,14 @@ def setup_config(args=sys.argv[1:]):
 def main():
     args = setup_config()
 
-    playlist = []
-    for arg in args.content:
-        if os.path.isfile(arg):
-            content = parse_file(arg, True)
-            if content:
-                playlist += content
-        elif os.path.isdir(arg):
-            playlist += parse_directory(arg)
-        else:
-            parsed_url = parse_url(arg)
-            if parsed_url.scheme:
-                content = parse_file(arg, True)
-                playlist += content
-            else:
-                sys.stderr.write(f"Error: No such file or directory: {arg}\n")
-                return 1
-    if args.shuffle:
-        shuffle(playlist)
+    playlist = create_playlist(args.content)
+
     if playlist == []:
         print("Nothing to play.")
         return 1
+
+    if args.shuffle:
+        shuffle(playlist)
 
     interface = Interface()
     sys.excepthook = interface.excepthook

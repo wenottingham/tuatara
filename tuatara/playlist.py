@@ -7,12 +7,29 @@
 
 import os
 import random
+import sys
 
 import m3u8
+from urllib3.util import parse_url
 
 from tuatara.playlist_entry import PlaylistEntry
 
 interesting_ext = [".flac", ".mp3", ".m4a", ".opus"]
+
+
+def parse_m3u(path):
+    playlist = []
+    pl = m3u8.load(path)
+    for entry in pl.segments:
+        if not entry.base_uri or entry.absolute_uri == entry.uri:
+            # Is a URL, assume it's valid
+            playlist.append(PlaylistEntry(entry.uri))
+        else:
+            # No URL, check file exists
+            if os.path.exists(entry.uri):
+                playlist.append(PlaylistEntry(entry.uri))
+    if playlist != []:
+        return playlist
 
 
 def parse_file(path, allow_m3u=False):
@@ -21,18 +38,7 @@ def parse_file(path, allow_m3u=False):
             return [PlaylistEntry(path)]
     if allow_m3u:
         if path.lower().endswith(".m3u") or path.lower().endswith("m3u8"):
-            playlist = []
-            pl = m3u8.load(path)
-            for entry in pl.segments:
-                if not entry.base_uri or entry.absolute_uri == entry.uri:
-                    # Is a URL, assume it's valid
-                    playlist.append(PlaylistEntry(entry.uri))
-                else:
-                    # No URL, check file exists
-                    if os.path.exists(entry.uri):
-                        playlist.append(PlaylistEntry(entry.uri))
-            if playlist != []:
-                return playlist
+            return parse_m3u(path)
     return None
 
 
@@ -45,6 +51,26 @@ def parse_directory(path):
             if fc:
                 playlist_entries += fc
     return playlist_entries
+
+
+def create_playlist(items):
+    playlist = []
+    for item in items:
+        if os.path.isfile(item):
+            content = parse_file(item, True)
+            if content:
+                playlist += content
+        elif os.path.isdir(item):
+            playlist += parse_directory(item)
+        else:
+            parsed_url = parse_url(item)
+            if parsed_url.scheme:
+                content = parse_file(item, True)
+                playlist += content
+            else:
+                sys.stderr.write(f"Error: No such file or directory: {item}\n")
+                return []
+    return playlist
 
 
 def shuffle(playlist):

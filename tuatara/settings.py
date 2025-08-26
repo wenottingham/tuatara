@@ -31,47 +31,56 @@ class Settings:
         }
         self._debugobj = None
 
+    def validate_fetchers(self, datum):
+        if isinstance(datum, list) and set(datum).issubset(("apple", "musicbrainz")):
+            return 0
+        sys.stderr.write(
+            "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n"
+        )
+        return 1
+
+    def validate_dynamic_background(self, datum):
+        if isinstance(datum, bool):
+            return 0
+        sys.stderr.write("Error: 'dynamic_background' must be true or false\n")
+        return 1
+
+    def validate_ascii_truecolor(self, datum):
+        if isinstance(datum, bool):
+            return 0
+        sys.stderr.write("Error: 'ascii_truecolor' must be true or false\n")
+        return 1
+
+    def validate_font_ratio(self, datum):
+        if (isinstance(datum, float) or isinstance(datum, int)) and datum > 0:
+            return 0
+        sys.stderr.write("Error: 'font_ratio' must be a positive number\n")
+        return 1
+
+    def validate_visualization(self, datum):
+        if isinstance(datum, str):
+            return 0
+        sys.stderr.write("Error: 'visualization' must be a string\n")
+        return 1
+
+    def validate_brightness_adj(self, datum):
+        if isinstance(datum, float) and datum >= 0 and datum <= 2:
+            return 0
+        sys.stderr.write("Error: 'brightness_adj' must be between 0 and 2\n")
+        return 1
+
+    def validate_contrast_adj(self, datum):
+        if isinstance(datum, float) and datum >= 0 and datum <= 2:
+            return 0
+        sys.stderr.write("Error: 'contrast_adj' must be between 0 and 2\n")
+        return 1
+
     def validate_art_settings(self, data):
         errors = 0
         for item in data.keys():
             datum = data[item]
-            match item:
-                case "fetchers":
-                    if isinstance(datum, list):
-                        continue
-                    sys.stderr.write(
-                        "Error: 'fetchers' must be a list of fetchers. Set to [] to disable fetching\n"
-                    )
-                    errors += 1
-                case "dynamic_background":
-                    if isinstance(datum, bool):
-                        continue
-                    sys.stderr.write(
-                        "Error: 'dynamic_background' must be true or false\n"
-                    )
-                    errors += 1
-                case "ascii_truecolor":
-                    if isinstance(datum, bool):
-                        continue
-                    sys.stderr.write("Error: 'ascii_truecolor' must be true or false\n")
-                    errors += 1
-                case "font_ratio":
-                    if (
-                        isinstance(datum, float) or isinstance(datum, int)
-                    ) and datum > 0:
-                        continue
-                    sys.stderr.write("Error: 'font_ratio' must be a positive number\n")
-                    errors += 1
-                case "visualization":
-                    if isinstance(datum, str):
-                        continue
-                    sys.stderr.write(f"Error: '{item}' must be a string\n")
-                    errors += 1
-                case "brightness_adj" | "contrast_adj":
-                    if isinstance(datum, float) and datum >= 0 and datum <= 2:
-                        continue
-                    sys.stderr.write(f"Error: '{item}' must be between 0 and 2\n")
-                    errors += 1
+            func = getattr(self, f"validate_{item}")
+            errors += func(datum)
         return errors == 0
 
     def load(self, path):

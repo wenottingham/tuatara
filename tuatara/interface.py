@@ -289,7 +289,7 @@ class Interface:
             ("Esc     ", ": Close help screen"),
             ("q       ", ": Quit"),
         ]
-        help_width = max(map(lambda x: len(x[0]) + len(x[1]), help_entries))
+        help_width = max([len(x[0]) + len(x[1]) for x in help_entries])
 
         def help_entry(txt):
             txt = self.term.ljust(txt, help_width)
