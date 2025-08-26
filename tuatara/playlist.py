@@ -6,6 +6,7 @@
 #
 
 import os
+import random
 
 import m3u8
 
@@ -44,3 +45,13 @@ def parse_directory(path):
             if fc:
                 playlist_entries += fc
     return playlist_entries
+
+
+def shuffle(playlist):
+    # Shuffles IN PLACE
+    r = len(playlist) - 1
+    for i in range(r):
+        j = random.randint(i, r)
+        temp = playlist[i]
+        playlist[i] = playlist[j]
+        playlist[j] = temp

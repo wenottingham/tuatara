@@ -2,7 +2,7 @@ import os
 
 from unittest import mock
 
-from tuatara.playlist import parse_file, parse_directory
+from tuatara.playlist import parse_file, parse_directory, shuffle
 
 
 def test_bad_file():
@@ -90,3 +90,12 @@ def test_directory_walk():
         assert "/foo/file.flac" in urls
         assert "/foo/bar/file2.flac" in urls
         assert "/foo/baz/file3.flac" in urls
+
+
+def test_shuffle():
+    # Technically flaky. Probability of it flaking? Low.
+    testlist = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    oldlist = testlist.copy()
+    shuffle(testlist)
+    assert set(oldlist) == set(testlist)
+    assert oldlist != testlist
