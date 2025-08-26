@@ -9,14 +9,13 @@
 
 import argparse
 import os
-import random
 import sys
 
 from urllib3.util import parse_url
 
 
 from tuatara.interface import Interface
-from tuatara.playlist import parse_directory, parse_file
+from tuatara.playlist import parse_directory, parse_file, shuffle
 from tuatara.player import Player
 from tuatara.settings import settings, config_dir, version
 
@@ -85,7 +84,7 @@ def main():
                 sys.stderr.write(f"Error: No such file or directory: {arg}\n")
                 return 1
     if args.shuffle:
-        random.shuffle(playlist)
+        shuffle(playlist)
     if playlist == []:
         print("Nothing to play.")
         return 1
