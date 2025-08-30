@@ -112,7 +112,12 @@ class Settings:
 
     def open_debugfile(self):
         if not self._debugobj:
-            self._debugobj = open(self._settings["debugfile"], "w")
+            fname = self._settings["debugfile"]
+            try:
+                self._debugobj = open(fname, "w")
+            except Exception as e:
+                sys.stderr.write(f"Error: cannot open {fname}: {e}")
+                return None
         return self._debugobj
 
     def get_art(self):

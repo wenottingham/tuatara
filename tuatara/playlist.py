@@ -24,10 +24,6 @@ def parse_m3u(path):
         if not entry.base_uri or entry.absolute_uri == entry.uri:
             # Is a URL, assume it's valid
             playlist.append(PlaylistEntry(entry.uri))
-        else:
-            # No URL, check file exists
-            if os.path.exists(entry.uri):
-                playlist.append(PlaylistEntry(entry.uri))
     if playlist != []:
         return playlist
 
