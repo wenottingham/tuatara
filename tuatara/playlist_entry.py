@@ -26,10 +26,7 @@ class PlaylistEntry:
         self.track = None
         self.track_total = None
         self.fetch_status = "not_started"
-        if url:
-            self.set_url(url)
-        else:
-            self.url = None
+        self.set_url(url)
 
     def __str__(self):
         if not self.title:
