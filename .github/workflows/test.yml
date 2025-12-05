@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13', '3.14']
 
     steps:
     - uses: actions/checkout@v3
@@ -52,7 +52,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

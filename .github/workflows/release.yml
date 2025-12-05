@@ -71,4 +71,4 @@ jobs:
         rm -f dist/*.sha256sum
 
     - name: "Publish dists to PyPI"
-      uses: pypa/gh-action-pypi-publish@release/v1
+      uses: pypa/gh-action-pypi-publish@67339c736fd9354cd4f8cb0b744f2b82a74b5c70 # v1.12.3
