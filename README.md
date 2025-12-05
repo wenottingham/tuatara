@@ -67,10 +67,13 @@ Python requirements:
 - m3u8
 - blessed
 
-tuatara can be installed from the [Releases](https://github.com/wenottingham/tuatara/releases) page on GitHub.
+tuatara can be installed from [PyPI](https://pypi.org/project/tuatara/), or
+from the [Releases](https://github.com/wenottingham/tuatara/releases) page on GitHub.
 
-Download and install the .whl file with pip, or download and use the pex file
-for your system's python interpreter.
+To install from Pypi, run:
+```
+pip install tuatara
+```
 
 tuatara is only tested on Linux. macOS or Windows may theoretically work.
 
