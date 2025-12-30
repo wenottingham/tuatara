@@ -13,6 +13,7 @@ import m3u8
 from urllib3.util import parse_url
 
 from tuatara.playlist_entry import PlaylistEntry
+from tuatara.settings import debug
 
 interesting_ext = [".flac", ".mp3", ".m4a", ".opus"]
 
@@ -28,9 +29,12 @@ def parse_m3u(path):
         return playlist
 
 
-def parse_file(path, allow_m3u=False):
+def parse_file(path, allow_m3u=False, skip_access_check=False):
     for ext in interesting_ext:
         if path.lower().endswith(ext):
+            if not os.access(path, os.R_OK) and not skip_access_check:
+                debug(f"Ignoring unreadable file {path}")
+                continue
             return [PlaylistEntry(path)]
     if allow_m3u:
         if path.lower().endswith(".m3u") or path.lower().endswith("m3u8"):
@@ -53,7 +57,7 @@ def create_playlist(items):
     playlist = []
     for item in items:
         if os.path.isfile(item):
-            content = parse_file(item, True)
+            content = parse_file(item, allow_m3u=True)
             if content:
                 playlist += content
         elif os.path.isdir(item):
@@ -61,7 +65,7 @@ def create_playlist(items):
         else:
             parsed_url = parse_url(item)
             if parsed_url.scheme:
-                content = parse_file(item, True)
+                content = parse_file(item, allow_m3u=True, skip_access_check=True)
                 playlist += content
             else:
                 sys.stderr.write(f"Error: No such file or directory: {item}\n")

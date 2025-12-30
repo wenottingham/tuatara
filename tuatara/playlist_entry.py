@@ -73,6 +73,12 @@ class PlaylistEntry:
                     if entry.is_file() and (
                         entry.name == "cover.jpg" or entry.name == "cover.png"
                     ):
+                        filepath = os.path.join(directory, entry.name)
+                        if not os.access(filepath, os.R_OK):
+                            debug(
+                                f"Cannot read in-directory art file {filepath} for {self}"
+                            )
+                            continue
                         debug(f"Using in-directory {entry.name} for {self}")
                         self.cover_art = FileCoverArt(
                             os.path.join(directory, entry.name)

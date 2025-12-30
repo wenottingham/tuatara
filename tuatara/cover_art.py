@@ -27,16 +27,13 @@ class FileCoverArt(CoverArt):
     def __init__(self, path):
         super().__init__()
         self.kind = "file"
-        if path:
-            self.set_path(path)
-        else:
-            self.path = None
+        self.path = path
+        self.imgdata = image_from_file(self.path)
 
     def set_path(self, path):
         self.path = path
 
     def get_image(self):
-        self.imgdata = image_from_file(self.path)
         if settings.art.get("dynamic_background"):
             self.bg_color = dominant_color(self.imgdata)
             self.fg_color = foreground_for(self.bg_color)
