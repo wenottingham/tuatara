@@ -386,3 +386,26 @@ def test_use_dir_art(tmp_path, capsys):
     assert f"{playlist_entry}" == "Hi - Hello - Anyone"
     assert playlist_entry.cover_art is not None
     assert playlist_entry.cover_art.path == os.path.join(tmp_path, "cover.jpg")
+
+
+def test_bad_dir_art(tmp_path, capsys):
+    settings._settings["art"]["fetchers"] = ["apple"]
+    settings.set_debug(True)
+    settings._debugobj = sys.stderr
+
+    playlist_entry = entry(
+        "Hello",
+        "Anyone",
+        tracks=9,
+        path=f"{tmp_path}/foo.flac",
+    )
+
+    with open(os.path.join(tmp_path, "cover.jpg"), "w+") as f:
+        f.close()
+    os.chmod(os.path.join(tmp_path, "cover.jpg"), 0o000)
+    playlist_entry.title = "Hi"
+    playlist_entry.find_cover_art()
+    cap = capsys.readouterr()
+    assert "Cannot read in-directory art" in cap.err
+    assert f"{playlist_entry}" == "Hi - Hello - Anyone"
+    assert playlist_entry.cover_art is None

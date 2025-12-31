@@ -15,7 +15,7 @@ from PIL import Image, ImageEnhance, UnidentifiedImageError
 
 from blessed.colorspace import RGB_256TABLE
 
-from tuatara.settings import settings
+from tuatara.settings import debug, settings
 
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf  # noqa: E402, F401
@@ -31,7 +31,8 @@ def _enhance(image):
 def image_from_file(path):
     try:
         img = Image.open(path)
-    except UnidentifiedImageError:
+    except (PermissionError, UnidentifiedImageError):
+        debug(f"Cannot process art file {path}")
         return None
     img.load()
     img = _enhance(img)
@@ -64,6 +65,8 @@ def dominant_color(img):
     # Reasonably fast colorthief using just Pillow
     #
     # Quantize the image, throw out "mostly white", pick the most used
+    if not img:
+        return (0, 0, 0)
     quantimg = img.quantize().convert("RGB")
     colors = quantimg.getcolors()
     colors = list(
