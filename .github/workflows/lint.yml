@@ -11,22 +11,15 @@ permissions:
 
 jobs:
   lint:
-
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-slim
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.14"
     - name: Install runtime tools
       run: |
-        python -m pip install --upgrade pip
-        pip install ruff
+        pip install --only-binary :all: ruff==0.15.22
     - name: Lint with ruff
       run: |
-        ruff check
+        ruff check --target-version py311
     - name: Check format with ruff
       run: |
-        ruff format --check --diff
+        ruff format --check --diff --target-version py311
