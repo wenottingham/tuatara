@@ -24,8 +24,7 @@ jobs:
         sudo apt install libgirepository-2.0-dev gir1.2-gstreamer-1.0 libcairo2-dev gir1.2-gdkpixbuf-2.0
     - name: Install runtime tools
       run: |
-        python -m pip install --upgrade pip
-        pip install poetry
+        pip install --only-binary :all: poetry==2.5.1
     - name: Setup poetry env
       run: |
         poetry install
